@@ -1,0 +1,24 @@
+{
+  "name": "ner-landslide-cloud-sync",
+  "version": "1.0.0",
+  "description": "Cloud-based Architecture & Offline Sync Support for Landslide Early Warning & Risk Monitoring in North Eastern Region (SIH 2026)",
+  "main": "server/mock_backend.js",
+  "scripts": {
+    "start": "node server/mock_backend.js",
+    "test": "node tests/unit_test.js",
+    "test:integration": "node tests/test_sync.js",
+    "simulate": "python simulator/telemetry_simulator.py"
+  },
+  "keywords": [
+    "sih2026",
+    "landslide-monitoring",
+    "offline-sync",
+    "pwa",
+    "indexeddb",
+    "postgis",
+    "supabase",
+    "ner"
+  ],
+  "author": "SIH Team",
+  "license": "MIT"
+}

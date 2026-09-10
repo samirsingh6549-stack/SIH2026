@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NER Landslide Monitor & Offline Sync Engine | SIH 2026</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="/app.css">
+  <meta name="theme-color" content="#0284c7">
+</head>
+<body>
+  <div class="app-container">
+    
+    <!-- HEADER -->
+    <header class="top-header">
+      <div class="header-branding">
+        <div class="logo-icon">⛰️</div>
+        <div>
+          <h1>NER Landslide Risk Monitor & Offline Sync Platform</h1>
+          <p class="subtitle">Cloud Architecture & Store-and-Forward Sync for Mountainous Dead Zones (SIH 2026)</p>
+        </div>
+      </div>
+
+      <!-- NETWORK CONTROLS & STATUS -->
+      <div class="network-control-panel">
+        <div class="status-indicator-box">
+          <span class="status-dot" id="status-dot"></span>
+          <span class="status-text" id="status-text">Detecting Network...</span>
+        </div>
+
+        <div class="simulation-switch-container">
+          <label class="switch-label">
+            <span class="switch-title">Dead Zone Sim:</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="sim-offline-toggle">
+              <span class="slider"></span>
+            </label>
+            <span class="toggle-desc" id="toggle-desc">Auto (Real Network)</span>
+          </label>
+        </div>
+      </div>
+    </header>
+
+    <!-- BANNER FOR DEMO -->
+    <div class="demo-banner">
+      <span class="badge">Judges Demo Mode</span>
+      Toggle the <strong>Dead Zone Sim</strong> switch to simulate disconnecting cell towers during a monsoon landslide in Sikkim or Meghalaya. Reports captured offline will queue safely and auto-sync when reconnected!
+    </div>
+
+    <!-- MAIN WORKSPACE -->
+    <main class="grid-layout">
+
+      <!-- PANEL 1: FIELD HAZARD REPORTING (OFFLINE-FIRST) -->
+      <section class="card panel-report">
+        <div class="card-header">
+          <h2>📝 Field Incident Report</h2>
+          <span class="pill pill-blue">Offline Enabled</span>
+        </div>
+        <p class="card-desc">Capture slope warnings, road fissures, and mudflows on-site even without internet.</p>
+
+        <form id="hazard-form" class="form-layout">
+          <div class="form-group">
+            <label for="reporter_name">Reporter Name & Role</label>
+            <div class="input-row">
+              <input type="text" id="reporter_name" placeholder="e.g. Ramesh Chettri" required value="Inspector T. Sangma">
+              <select id="reporter_role">
+                <option value="NDRF / SDRF">NDRF / SDRF Team</option>
+                <option value="Civil Defense">Civil Defense Scout</option>
+                <option value="PWD Engineer">PWD Road Engineer</option>
+                <option value="Citizen">Local Citizen</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="hazard_type">Observed Hazard Type</label>
+            <select id="hazard_type" required>
+              <option value="Soil Tension Crack">Tension Cracks on Upper Slope (> 5cm wide)</option>
+              <option value="Rockfall">Rockfall / Boulder Roll onto Highway</option>
+              <option value="Debris Flow / Mudslide">Active Debris Flow / Mudslide</option>
+              <option value="Retaining Wall Bulge">Retaining Wall Deformation / Bulging</option>
+              <option value="Spring Water Turbidity">Sudden Muddy Water Eruption from Slope</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="severity">Hazard Severity</label>
+            <select id="severity" required>
+              <option value="LOW">LOW - Early Warning Signs</option>
+              <option value="MEDIUM">MEDIUM - Developing Instability</option>
+              <option value="HIGH" selected>HIGH - Imminent Slope Failure</option>
+              <option value="CRITICAL">CRITICAL - Active Movement / Road Blocked</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>NER Location (Coordinates)</label>
+            <div class="input-row">
+              <select id="preset_location">
+                <option value="25.5788,91.8933">East Khasi Hills (Shillong), Meghalaya</option>
+                <option value="27.3389,88.6065">NH-10 Ranipool Corridor, Sikkim</option>
+                <option value="23.7271,92.7176">Chite Veng Ridge, Aizawl, Mizoram</option>
+                <option value="25.6751,94.1086">Kohima Bypass Highway, Nagaland</option>
+              </select>
+            </div>
+            <div class="input-row lat-lng-inputs">
+              <input type="number" step="any" id="latitude" placeholder="Latitude" value="25.5788" required>
+              <input type="number" step="any" id="longitude" placeholder="Longitude" value="91.8933" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="notes">Observations & Endangered Infrastructure</label>
+            <textarea id="notes" rows="3" placeholder="e.g. 15-meter crack observed along hillside; NH-10 roadbed subsiding; 3 houses evacuated nearby.">Continuous heavy seepage observed above retaining wall. Road subsidence of 8 cm detected.</textarea>
+          </div>
+
+          <button type="submit" class="btn btn-primary" id="btn-submit-report">
+            <span>💾 Save & Queue Report</span>
+          </button>
+        </form>
+      </section>
+
+      <!-- PANEL 2: STORE-AND-FORWARD OUTBOX QUEUE -->
+      <section class="card panel-outbox">
+        <div class="card-header">
+          <h2>📦 Local Outbox & Sync Queue</h2>
+          <div class="outbox-stats">
+            <span class="badge badge-warning" id="pending-badge">0 Pending</span>
+            <span class="badge badge-success" id="synced-badge">0 Synced</span>
+          </div>
+        </div>
+        <p class="card-desc">All reports are committed immediately to local IndexedDB, guaranteeing zero data loss.</p>
+
+        <div class="outbox-actions">
+          <button class="btn btn-secondary btn-sm" id="btn-force-sync">🔄 Trigger Sync Now</button>
+          <button class="btn btn-outline btn-sm" id="btn-clear-history">🗑️ Clear Synced</button>
+        </div>
+
+        <div class="outbox-list" id="outbox-list">
+          <div class="empty-state">No reports submitted yet. Submit a report on the left to see the sync lifecycle!</div>
+        </div>
+      </section>
+
+      <!-- PANEL 3: OFFLINE-CACHED DOWNSTREAM DATA -->
+      <section class="card panel-cache">
+        <div class="card-header">
+          <h2>🗺️ Cached Downstream Data</h2>
+          <button class="btn btn-outline btn-sm" id="btn-refresh-cache">📥 Refresh Cache</button>
+        </div>
+        <p class="card-desc">High-risk zones and alerts cached locally so teams can navigate without cell towers.</p>
+
+        <div class="cache-section">
+          <h3>🚨 Active Emergency Alerts (Cached)</h3>
+          <div id="cached-alerts-list" class="cache-items-list">
+            <div class="loading-text">Loading alerts from local storage...</div>
+          </div>
+        </div>
+
+        <div class="cache-section">
+          <h3>⚠️ Monitored Risk Zones (Cached)</h3>
+          <div id="cached-zones-list" class="cache-items-list">
+            <div class="loading-text">Loading risk zones from local storage...</div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- FOOTER / ARCHITECTURE HIGHLIGHTS -->
+    <footer class="footer-bar">
+      <div class="arch-tag">PostgreSQL + PostGIS Ready</div>
+      <div class="arch-tag">IndexedDB Local Persistence</div>
+      <div class="arch-tag">Service Worker PWA</div>
+      <div class="arch-tag">Idempotent UUIDv4 Sync</div>
+      <div class="arch-tag">100% Free & Open Stack</div>
+    </footer>
+
+  </div>
+
+  <!-- Client Application Script (ES Module) -->
+  <script type="module" src="/src/app.js"></script>
+</body>
+</html>
