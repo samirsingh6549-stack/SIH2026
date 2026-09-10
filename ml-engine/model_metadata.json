@@ -1,0 +1,45 @@
+{
+  "model_name": "RandomForest_NER_Landslide_Susceptibility",
+  "algorithm": "RandomForestClassifier",
+  "n_estimators": 120,
+  "features": [
+    "rainfall_mm",
+    "river_water_level",
+    "soil_moisture_percent",
+    "slope_angle_degrees",
+    "wind_speed_kmh",
+    "vegetation_density_ndvi",
+    "antecedent_rainfall_72h_mm",
+    "pore_water_pressure_kpa",
+    "elevation_m",
+    "soil_type_idx",
+    "soil_texture_idx",
+    "lithology_idx"
+  ],
+  "accuracy": 0.9883,
+  "f1_score": 0.9694,
+  "roc_auc": 0.9987,
+  "feature_importances": {
+    "rainfall_mm": 0.1887,
+    "river_water_level": 0.018,
+    "soil_moisture_percent": 0.1075,
+    "slope_angle_degrees": 0.3334,
+    "wind_speed_kmh": 0.0112,
+    "vegetation_density_ndvi": 0.0109,
+    "antecedent_rainfall_72h_mm": 0.1216,
+    "pore_water_pressure_kpa": 0.075,
+    "elevation_m": 0.0115,
+    "soil_type_idx": 0.1164,
+    "soil_texture_idx": 0.0025,
+    "lithology_idx": 0.0033
+  },
+  "classes": [
+    0,
+    1
+  ],
+  "class_labels": [
+    "Stable / Low Risk",
+    "Landslide Hazard Detected"
+  ],
+  "target_region": "North Eastern Region (NER) - 8 States"
+}

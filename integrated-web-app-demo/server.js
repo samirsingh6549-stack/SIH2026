@@ -347,13 +347,34 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, { status: 'BATCH_SYNC_SUCCESS', synced_count: synced.length, synced_ids: synced });
     }
 
+    if (pathname === '/api/ml/heatmap') {
+      const rainfall = parsed.searchParams.get('rainfall') || '75.0';
+      try {
+        const cmd = `python ml-engine/cli_heatmap.py --rainfall ${rainfall}`;
+        const output = require('child_process').execSync(cmd, { cwd: path.resolve(__dirname, '..'), encoding: 'utf-8' });
+        const data = JSON.parse(output.trim());
+        return sendJson(res, 200, data);
+      } catch (err) {
+        return sendJson(res, 500, { error: 'Failed to run ML batch inference: ' + err.message });
+      }
+    }
+
     if (pathname === '/api/simulate/monsoon_surge' && req.method === 'POST') {
       const { rainfall_mm = 75.0 } = await parseJson(req);
       const st = db.stations[0];
       st.rainfall_mm_h = rainfall_mm;
       st.pore_pressure_kpa = +(45.0 + rainfall_mm * 0.12).toFixed(1);
       st.soil_moisture_pct = Math.min(99.0, 88.0 + rainfall_mm * 0.1);
-      return sendJson(res, 200, { station: st });
+
+      // Re-run batch ML inference for the whole region with new rainfall surge
+      let mlHeatmap = null;
+      try {
+        const cmd = `python ml-engine/cli_heatmap.py --rainfall ${rainfall_mm}`;
+        const output = require('child_process').execSync(cmd, { cwd: path.resolve(__dirname, '..'), encoding: 'utf-8' });
+        mlHeatmap = JSON.parse(output.trim());
+      } catch (e) {}
+
+      return sendJson(res, 200, { station: st, heatmap: mlHeatmap });
     }
 
     // Static Assets

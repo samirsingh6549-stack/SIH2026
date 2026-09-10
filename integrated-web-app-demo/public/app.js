@@ -10,6 +10,8 @@ let zoneLayerGroup;
 let stationLayerGroup;
 let reportLayerGroup;
 let bufferLayerGroup;
+let mlHeatmapLayer;
+let mlCircleMarkersGroup;
 
 // Local Outbox (IndexedDB simulation)
 let localOutbox = [
@@ -297,6 +299,17 @@ function initGISMap() {
   stationLayerGroup = L.layerGroup().addTo(map);
   reportLayerGroup = L.layerGroup().addTo(map);
   bufferLayerGroup = L.layerGroup().addTo(map);
+  mlCircleMarkersGroup = L.layerGroup().addTo(map);
+
+  document.getElementById('chk-ml-heatmap').addEventListener('change', e => {
+    if (e.target.checked) {
+      if (mlHeatmapLayer) map.addLayer(mlHeatmapLayer);
+      if (mlCircleMarkersGroup) map.addLayer(mlCircleMarkersGroup);
+    } else {
+      if (mlHeatmapLayer) map.removeLayer(mlHeatmapLayer);
+      if (mlCircleMarkersGroup) map.removeLayer(mlCircleMarkersGroup);
+    }
+  });
 
   document.getElementById('chk-zones').addEventListener('change', e => { if (e.target.checked) map.addLayer(zoneLayerGroup); else map.removeLayer(zoneLayerGroup); });
   document.getElementById('chk-stations').addEventListener('change', e => { if (e.target.checked) map.addLayer(stationLayerGroup); else map.removeLayer(stationLayerGroup); });
@@ -358,14 +371,24 @@ function initChart() {
 // 7. DATA REFRESH & MAP RENDERING ACROSS ALL 8 STATES
 async function refreshAllData() {
   try {
-    const [stRes, zRes, altRes, repRes] = await Promise.all([
+    const rainSliderVal = document.getElementById('rain-range') ? document.getElementById('rain-range').value : 75;
+    const [stRes, zRes, altRes, repRes, mlRes] = await Promise.all([
       fetch('/api/stations').then(r => r.json()),
       fetch('/api/risk_zones').then(r => r.json()),
       fetch('/api/alerts').then(r => r.json()),
-      fetch('/api/reports').then(r => r.json())
+      fetch('/api/reports').then(r => r.json()),
+      fetch(`/api/ml/heatmap?rainfall=${rainSliderVal}`).then(r => r.json()).catch(err => {
+        console.warn('ML Heatmap endpoint fetch failed:', err);
+        return null;
+      })
     ]);
 
     cachedAlertsData = altRes.alerts || [];
+
+    // Plot AI Machine Learning Probability Heatmap & Hotspot Circle Markers
+    if (mlRes && mlRes.status === 'success') {
+      renderMlHeatmap(mlRes);
+    }
 
     // Plot All 8 State Risk Zones & Lifelines
     zoneLayerGroup.clearLayers();
@@ -422,6 +445,86 @@ async function refreshAllData() {
     console.error('Data refresh error:', err);
   }
 }
+
+// RENDER AI PROBABILITY HEATMAP & SCORING LAYER
+function renderMlHeatmap(data) {
+  if (!data || !data.leaflet_heat_points) return;
+
+  // 1. Remove previous smooth heat layer if exists
+  if (mlHeatmapLayer && map.hasLayer(mlHeatmapLayer)) {
+    map.removeLayer(mlHeatmapLayer);
+  }
+
+  // 2. Build continuous density heat layer via Leaflet.heat
+  if (typeof L.heatLayer === 'function') {
+    mlHeatmapLayer = L.heatLayer(data.leaflet_heat_points, {
+      radius: 42,
+      blur: 24,
+      maxZoom: 12,
+      max: 1.0,
+      gradient: {
+        0.15: '#22c55e',
+        0.40: '#eab308',
+        0.65: '#f97316',
+        0.85: '#ef4444'
+      }
+    });
+
+    if (document.getElementById('chk-ml-heatmap').checked) {
+      mlHeatmapLayer.addTo(map);
+    }
+  }
+
+  // 3. Clear and render crisp interactive circle markers with probability scores
+  mlCircleMarkersGroup.clearLayers();
+  if (data.geojson_feature_collection && data.geojson_feature_collection.features) {
+    data.geojson_feature_collection.features.forEach(f => {
+      const p = f.properties;
+      const coords = [f.geometry.coordinates[1], f.geometry.coordinates[0]];
+      const pct = (p.lsi_score * 100).toFixed(1);
+
+      const circle = L.circleMarker(coords, {
+        radius: 9,
+        fillColor: p.color,
+        color: '#ffffff',
+        weight: 1.5,
+        fillOpacity: 0.92
+      });
+
+      // Quick hover tooltip
+      circle.bindTooltip(`<strong>${p.station_name}</strong><br>AI Probability: <span style="color:${p.color};font-weight:bold;">${pct}% (${p.risk_level})</span>`, {
+        direction: 'top',
+        className: 'heatmap-tooltip'
+      });
+
+      // Detailed popup
+      circle.bindPopup(`
+        <div style="font-size:12px; line-height:1.45; min-width:190px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+            <span style="background:${p.color}; color:#fff; padding:2px 7px; border-radius:3px; font-weight:bold; font-size:10px;">${p.risk_level} RISK</span>
+            <span style="font-weight:bold; color:${p.color}; font-size:13px;">${pct}%</span>
+          </div>
+          <strong>${p.station_name}</strong><br>
+          State: <strong>${p.state}</strong> (${p.location_id})<br>
+          Continuous LSI Score: <strong>${p.lsi_score}</strong><br>
+          <hr style="margin:5px 0; border:0; border-top:1px solid #334155;">
+          <span style="font-size:10px; color:#94a3b8;">Module 1 AI Engine (Physics-Guided Random Forest + Antecedent Rain Matrix)</span>
+        </div>
+      `);
+
+      circle.addTo(mlCircleMarkersGroup);
+    });
+  }
+
+  // 4. Update status summary in map toolbar footer
+  const statusEl = document.getElementById('lbl-batch-status');
+  if (statusEl) {
+    const maxPct = (data.max_lsi_score * 100).toFixed(1);
+    const meanPct = (data.mean_lsi_score * 100).toFixed(1);
+    statusEl.textContent = `${data.grid_cell_count} Cells (Max: ${maxPct}%, Mean: ${meanPct}%)`;
+  }
+}
+
 
 function selectStation(st) {
   document.getElementById('station-name-disp').textContent = `${st.id}: ${st.name}`;
@@ -506,7 +609,22 @@ function initScenarioSlider() {
   const disp = document.getElementById('slider-rain-val');
   const btn = document.getElementById('btn-run-scenario');
 
-  slider.addEventListener('input', () => { disp.textContent = `${slider.value} mm/h`; });
+  slider.addEventListener('input', () => { 
+    disp.textContent = `${slider.value} mm/h`; 
+  });
+
+  // Dynamically recompute batch ML probabilities and heatmap on slider drag release
+  slider.addEventListener('change', async () => {
+    try {
+      const res = await fetch(`/api/ml/heatmap?rainfall=${slider.value}`);
+      const data = await res.json();
+      if (data && data.status === 'success') {
+        renderMlHeatmap(data);
+      }
+    } catch (e) {
+      console.warn('Live slider heatmap update error:', e);
+    }
+  });
 
   btn.addEventListener('click', async () => {
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Testing Factor of Safety...';
@@ -520,6 +638,9 @@ function initScenarioSlider() {
       });
       const data = await res.json();
       selectStation(data.station);
+      if (data.heatmap) {
+        renderMlHeatmap(data.heatmap);
+      }
       await refreshAllData();
       alert(`⚡ MONSOON SURGE SIMULATED:\n\nRainfall intensity ${slider.value} mm/h evaluated across Sikkim & Assam lifelines.\nPore water pressure reached ${data.station.pore_pressure_kpa} kPa.\nEmergency sirens & SMS dispatched in native dialects!`);
     } finally {

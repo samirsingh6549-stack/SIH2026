@@ -7,7 +7,16 @@
     "start": "node server/mock_backend.js",
     "test": "node tests/unit_test.js",
     "test:integration": "node tests/test_sync.js",
-    "simulate": "python simulator/telemetry_simulator.py"
+    "simulate": "python simulator/telemetry_simulator.py",
+    "ml:train": "python ml-engine/train_model.py",
+    "ml:test": "python ml-engine/test_ml_engine.py",
+    "ml:start": "python ml-engine/server.py",
+    "ingest": "python ingestion/pipeline.py",
+    "ingest:test": "python ingestion/test_ingestion.py",
+    "alert:test": "python alert-engine/test_alert_engine.py",
+    "alert:start": "python alert-engine/server.py",
+    "gis:test": "python gis-engine/test_gis_engine.py",
+    "gis:start": "python gis-engine/server.py"
   },
   "keywords": [
     "sih2026",

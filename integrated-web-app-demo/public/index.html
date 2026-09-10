@@ -156,10 +156,11 @@
           <div class="map-tools-left">
             <span class="tool-title"><i class="fa-solid fa-layer-group"></i> GIS Geospatial Map</span>
             <div class="layer-toggles">
+              <label class="layer-chk" style="color:#ef4444; font-weight:bold;"><input type="checkbox" id="chk-ml-heatmap" checked> <i class="fa-solid fa-fire"></i> AI LSI Heatmap</label>
               <label class="layer-chk"><input type="checkbox" id="chk-zones" checked> Risk Polygons</label>
-              <label class="layer-chk"><input type="checkbox" id="chk-stations" checked> 8-State Geotech Arrays</label>
-              <label class="layer-chk"><input type="checkbox" id="chk-reports" checked> Ground Truth Pins</label>
-              <label class="layer-chk"><input type="checkbox" id="chk-buffers" checked> Evac 1.5km Rings</label>
+              <label class="layer-chk"><input type="checkbox" id="chk-stations" checked> 8-State Geotech</label>
+              <label class="layer-chk"><input type="checkbox" id="chk-reports" checked> Field Pins</label>
+              <label class="layer-chk"><input type="checkbox" id="chk-buffers"> Evac Rings</label>
             </div>
           </div>
           <div class="map-tools-right">
@@ -171,9 +172,9 @@
         <div id="gis-main-map"></div>
 
         <div class="map-statusbar">
-          <div class="status-stat"><i class="fa-solid fa-road"></i> <span>Lifelines: NH-10, NH-27, NH-29, NH-13, NH-37</span></div>
-          <div class="status-stat"><i class="fa-solid fa-satellite"></i> <span>Coverage: All 8 NER States</span></div>
-          <div class="status-stat"><i class="fa-solid fa-database"></i> <span>Offline Sync Engine: Active</span></div>
+          <div class="status-stat" style="color:#f87171;"><i class="fa-solid fa-brain"></i> <span>AI Batch Probability: <strong id="lbl-batch-status">12 Cells (Max LSI: 97.3%)</strong></span></div>
+          <div class="status-stat"><i class="fa-solid fa-road"></i> <span>Lifelines: NH-10, NH-27, NH-29, NH-13</span></div>
+          <div class="status-stat"><i class="fa-solid fa-database"></i> <span>Offline Sync: Active</span></div>
         </div>
       </div>
     </section>
@@ -360,6 +361,8 @@
 
   <!-- Leaflet GIS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Leaflet Heat Plugin for AI Probability Heatmap -->
+  <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Main Platform App Script -->

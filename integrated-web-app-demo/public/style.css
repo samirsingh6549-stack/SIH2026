@@ -797,3 +797,31 @@ input:focus, select:focus, textarea:focus {
   50% { opacity: 0.4; }
   100% { opacity: 1; }
 }
+
+/* LEAFLET AI HEATMAP TOOLTIP & POPUP STYLING */
+.leaflet-tooltip.heatmap-tooltip {
+  background: #0f172a !important;
+  border: 1px solid #334155 !important;
+  color: #f8fafc !important;
+  font-size: 11px !important;
+  padding: 4px 8px !important;
+  border-radius: 4px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6) !important;
+}
+
+.leaflet-popup-content-wrapper {
+  background: #0d1527 !important;
+  color: #f1f5f9 !important;
+  border: 1px solid #1e2b45 !important;
+  border-radius: 6px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7) !important;
+}
+
+.leaflet-popup-tip {
+  background: #0d1527 !important;
+}
+
+.leaflet-popup-close-button {
+  color: #94a3b8 !important;
+}
+
