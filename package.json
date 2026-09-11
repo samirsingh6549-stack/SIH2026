@@ -16,7 +16,8 @@
     "alert:test": "python alert-engine/test_alert_engine.py",
     "alert:start": "python alert-engine/server.py",
     "gis:test": "python gis-engine/test_gis_engine.py",
-    "gis:start": "python gis-engine/server.py"
+    "gis:start": "python gis-engine/server.py",
+    "mobile:test": "python tests/test_mobile_integration.py"
   },
   "keywords": [
     "sih2026",
