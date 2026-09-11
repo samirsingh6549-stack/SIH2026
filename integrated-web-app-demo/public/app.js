@@ -319,6 +319,8 @@ document.addEventListener('DOMContentLoaded', () => {
   safeInit(initDialectSwitcher, 'Dialect Switcher');
   safeInit(initOfflineSimulation, 'Offline Simulation');
   safeInit(initSurgeSlider, 'Surge Slider');
+  safeInit(initLiveWeatherToggle, 'Live Weather Toggle');
+  safeInit(initSmsGatewayModal, 'SMS Gateway Modal');
   safeInit(initEmergencyBroadcast, 'Emergency Broadcast');
   safeInit(initAudioSiren, 'Audio Siren');
   safeInit(initInSARRefresh, 'InSAR Refresh');
@@ -1137,6 +1139,236 @@ function applyDialect(lang) {
 }
 
 // ==========================================
+// 12B. REAL-TIME DATA STREAM INTEGRATIONS
+// ==========================================
+
+// Designated relief shelters across all 8 NER states for emergency evacuation routing
+const RELIEF_SHELTERS = {
+  sikkim: { name: 'Upper Martam High Ridge Shelter', lat: 27.3520, lng: 88.6180 },
+  assam: { name: 'Haflong Circuit House Relief Camp', lat: 25.1780, lng: 93.0150 },
+  manipur: { name: 'Longmai Mountain Spur Safe Base', lat: 24.8450, lng: 93.7100 },
+  meghalaya: { name: 'Laitryngew Ridge School Camp', lat: 25.6100, lng: 91.8800 },
+  nagaland: { name: 'Khonoma Mountain Crest Shelter', lat: 25.6500, lng: 94.0200 },
+  arunachal: { name: 'Dirang Alpine Staging Base', lat: 27.3500, lng: 92.2300 },
+  mizoram: { name: 'Aizawl Govt College Ridge', lat: 23.7380, lng: 92.7240 },
+  tripura: { name: 'Vanghmun Summit Camp', lat: 23.9800, lng: 92.2700 }
+};
+
+let isLiveWeatherActive = false;
+
+// 1. Live Weather Toggle (Open-Meteo Integration)
+function initLiveWeatherToggle() {
+  const btn = document.getElementById('btn-live-weather');
+  const txt = document.getElementById('txt-weather-mode');
+  const toast = document.getElementById('toast-broadcast');
+
+  if (!btn) return;
+
+  btn.addEventListener('click', async () => {
+    isLiveWeatherActive = !isLiveWeatherActive;
+
+    if (isLiveWeatherActive) {
+      btn.classList.add('active-glow');
+      if (txt) txt.textContent = 'Syncing Satellite...';
+
+      try {
+        const res = await fetch('/api/weather/live?refresh=true');
+        const data = await res.json();
+
+        if (data && data.stations) {
+          if (txt) txt.textContent = 'Live Satellite (Open-Meteo)';
+
+          data.stations.forEach(st => {
+            const key = Object.keys(HOTSPOTS).find(k => 
+              HOTSPOTS[k].name.toLowerCase().includes(st.name.toLowerCase().split(' ')[0].toLowerCase()) || 
+              HOTSPOTS[k].state.toLowerCase() === st.state.toLowerCase()
+            );
+            if (key && HOTSPOTS[key]) {
+              HOTSPOTS[key].rain = `${st.rainfall_mm_h} mm/h`;
+              HOTSPOTS[key].pore = `${st.pore_pressure_kpa} kPa`;
+              HOTSPOTS[key].risk = st.status;
+              HOTSPOTS[key].prob = st.status === 'CRITICAL' ? 92 : st.status === 'HIGH' ? 76 : 48;
+              HOTSPOTS[key].fos = st.status === 'CRITICAL' ? '0.84 (Failure Imminent)' : st.status === 'HIGH' ? '1.09 (Active Creep)' : '1.42 (Stable)';
+            }
+          });
+
+          plotStationMarkers(data.stations);
+          if (currentInspectorSector) {
+            const updated = data.stations.find(s => s.id === currentInspectorSector.id || s.name === currentInspectorSector.name);
+            if (updated) {
+              updateSectorInspector({
+                ...currentInspectorSector,
+                rain: `${updated.rainfall_mm_h} mm/h`,
+                pore: `${updated.pore_pressure_kpa} kPa`,
+                risk: updated.status,
+                prob: updated.status === 'CRITICAL' ? 92 : updated.status === 'HIGH' ? 76 : 48,
+                fos: updated.status === 'CRITICAL' ? '0.84 (Failure Imminent)' : updated.status === 'HIGH' ? '1.09 (Active Creep)' : '1.42 (Stable)'
+              });
+            }
+          }
+
+          if (toast) {
+            toast.innerHTML = `<i class="fa-solid fa-satellite-dish"></i> <span>Open-Meteo Satellite Feed Synced: Live precipitation & volumetric soil moisture loaded for all 8 NER states.</span>`;
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.add('hidden'), 5000);
+          }
+        }
+      } catch (err) {
+        console.error('Open-Meteo fetch failed:', err);
+        if (txt) txt.textContent = 'Live Satellite Error';
+      }
+    } else {
+      btn.classList.remove('active-glow');
+      if (txt) txt.textContent = 'Live Satellite Weather';
+      loadBackendData();
+    }
+  });
+}
+
+// 2. SMS Gateway Configuration Modal
+function initSmsGatewayModal() {
+  const modal = document.getElementById('modal-sms-gateway');
+  const openBtn = document.getElementById('btn-sms-modal');
+  const closeBtn = document.getElementById('btn-close-sms-modal');
+  const closeBtn2 = document.getElementById('btn-close-sms-modal-2');
+  const dispatchBtn = document.getElementById('btn-test-sms-dispatch');
+  const statusBox = document.getElementById('sms-dispatch-status');
+
+  if (!modal) return;
+
+  const openModal = () => {
+    modal.classList.remove('hidden');
+    const msgEl = document.getElementById('sms-custom-message');
+    if (msgEl && currentInspectorSector) {
+      msgEl.value = `EMERGENCY ALERT [SEOC 112]: Active slope failure predicted on ${currentInspectorSector.name}. Factor of Safety < 0.88. Evacuate uphill immediately.`;
+    }
+  };
+
+  const closeModal = () => {
+    modal.classList.add('hidden');
+    if (statusBox) statusBox.classList.add('hidden');
+  };
+
+  if (openBtn) openBtn.addEventListener('click', openModal);
+  if (closeBtn) closeBtn.addEventListener('click', closeModal);
+  if (closeBtn2) closeBtn2.addEventListener('click', closeModal);
+
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) closeModal();
+  });
+
+  if (dispatchBtn) {
+    dispatchBtn.addEventListener('click', async () => {
+      const phoneInput = document.getElementById('sms-phone-input');
+      const keyInput = document.getElementById('sms-api-key-input');
+      const msgInput = document.getElementById('sms-custom-message');
+
+      const rawNumbers = phoneInput ? phoneInput.value : '';
+      const numbers = rawNumbers.split(',').map(s => s.trim()).filter(Boolean);
+      const apiKey = keyInput ? keyInput.value.trim() : '';
+      const message = msgInput ? msgInput.value.trim() : '';
+
+      dispatchBtn.disabled = true;
+      dispatchBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Dispatching Carrier SMS...';
+
+      try {
+        const res = await fetch('/api/sms/broadcast', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            phone_numbers: numbers,
+            fast2sms_key: apiKey || undefined,
+            message: message,
+            sector: currentInspectorSector ? currentInspectorSector.name : 'NER Regional Corridor'
+          })
+        });
+
+        const data = await res.json();
+
+        if (statusBox) {
+          statusBox.classList.remove('hidden');
+          if (data.gateway === 'FAST2SMS_DLT' && data.carrier_response?.statusCode === 200) {
+            statusBox.className = 'status-box success';
+            statusBox.innerHTML = `<strong>✅ LIVE SMS TRANSMITTED:</strong> Dispatched via Fast2SMS DLT Gateway to ${data.recipient_count} phone(s). Delivery verified!`;
+          } else if (data.gateway === 'DEVELOPMENT_SMS_SIMULATOR') {
+            statusBox.className = 'status-box warn';
+            statusBox.innerHTML = `<strong>📋 SEOC SIMULATOR DISPATCH:</strong> Broadcast payload queued into State EOC 112 Incident Log. (Enter Fast2SMS API Key above for live mobile delivery).`;
+          } else {
+            statusBox.className = 'status-box warn';
+            statusBox.innerHTML = `<strong>⚠️ GATEWAY RESPONSE (${data.gateway}):</strong> ${JSON.stringify(data.carrier_response?.body || data.instructions)}`;
+          }
+        }
+
+        playAudioSiren();
+
+      } catch (err) {
+        if (statusBox) {
+          statusBox.classList.remove('hidden');
+          statusBox.className = 'status-box warn';
+          statusBox.innerHTML = `<strong>Error:</strong> Failed to connect to SMS gateway: ${err.message}`;
+        }
+      } finally {
+        dispatchBtn.disabled = false;
+        dispatchBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Dispatch Mobile SMS';
+      }
+    });
+  }
+}
+
+// 3. OSRM Highway Evacuation Dynamic Router
+async function triggerOsrmEvacuationRoute(sector) {
+  if (!sector || !map || typeof L === 'undefined') return;
+
+  const stateKey = (sector.state || 'sikkim').toLowerCase();
+  const shelter = RELIEF_SHELTERS[stateKey] || RELIEF_SHELTERS.sikkim;
+
+  const toast = document.getElementById('toast-broadcast');
+  if (toast) {
+    toast.innerHTML = `<i class="fa-solid fa-route"></i> <span>Computing live OSRM Highway Evacuation Route to ${shelter.name}...</span>`;
+    toast.classList.remove('hidden');
+  }
+
+  try {
+    const res = await fetch(`/api/route/live?origin_lng=${sector.lng}&origin_lat=${sector.lat}&dest_lng=${shelter.lng}&dest_lat=${shelter.lat}`);
+    const data = await res.json();
+
+    if (data && data.coordinates && bypassLayerGroup) {
+      bypassLayerGroup.clearLayers();
+
+      const latLngs = data.coordinates.map(c => [c[1], c[0]]);
+
+      const polyline = L.polyline(latLngs, {
+        color: '#38bdf8',
+        weight: 5,
+        opacity: 0.95,
+        lineCap: 'round',
+        lineJoin: 'round',
+        dashArray: '8, 6'
+      }).addTo(bypassLayerGroup);
+
+      const shelterPin = createCustomPin('#10b981', true);
+      const shelterMarker = L.marker([shelter.lat, shelter.lng], { icon: shelterPin }).addTo(bypassLayerGroup);
+      shelterMarker.bindPopup(`
+        <div style="font-size:12px; line-height:1.4;">
+          <strong style="color:#10b981; font-size:13px;">${shelter.name}</strong><br>
+          <em>Designated High-Ground Evacuation Shelter</em><br>
+          <div style="margin-top:4px; color:#38bdf8; font-weight:bold;">Transit Distance: ${data.distance_km} km • ETA: ${data.duration_min} mins</div>
+        </div>
+      `).openPopup();
+
+      map.fitBounds(polyline.getBounds(), { padding: [40, 40] });
+
+      if (toast) {
+        toast.innerHTML = `<i class="fa-solid fa-shield-halved text-emerald"></i> <span><strong>EVACUATION CORRIDOR ACTIVE:</strong> Route plotted to ${shelter.name} (${data.distance_km} km, ~${data.duration_min} mins) via ${data.source}.</span>`;
+        setTimeout(() => toast.classList.add('hidden'), 5500);
+      }
+    }
+  } catch (err) {
+    console.warn('OSRM route fetch failed:', err);
+  }
+}
+
+// ==========================================
 // 13. EMERGENCY BROADCAST & AUDIO SIREN
 // ==========================================
 
@@ -1145,7 +1377,7 @@ function initEmergencyBroadcast() {
   const toast = document.getElementById('toast-broadcast');
   const transmitBtn = document.getElementById('btn-transmit-callout');
 
-  const executeBroadcast = () => {
+  const executeBroadcast = async () => {
     if (toast) {
       toast.classList.remove('hidden');
       setTimeout(() => {
@@ -1164,6 +1396,29 @@ function initEmergencyBroadcast() {
         marquee.textContent = orig;
       }, 6000);
     }
+
+    // Trigger dynamic OSRM mountain evacuation route on map
+    if (currentInspectorSector) {
+      triggerOsrmEvacuationRoute(currentInspectorSector);
+    }
+
+    // Automatically trigger background SMS broadcast
+    try {
+      const phoneInput = document.getElementById('sms-phone-input');
+      const keyInput = document.getElementById('sms-api-key-input');
+      const numbers = phoneInput && phoneInput.value ? phoneInput.value.split(',').map(s => s.trim()).filter(Boolean) : ['+919876543210'];
+      const apiKey = keyInput ? keyInput.value.trim() : '';
+
+      fetch('/api/sms/broadcast', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone_numbers: numbers,
+          fast2sms_key: apiKey || undefined,
+          sector: currentInspectorSector ? currentInspectorSector.name : 'Sikkim NH-10 Ranipool'
+        })
+      }).catch(() => {});
+    } catch (e) {}
   };
 
   if (triggerBtn) triggerBtn.addEventListener('click', executeBroadcast);

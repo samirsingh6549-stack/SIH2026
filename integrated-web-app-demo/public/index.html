@@ -156,6 +156,18 @@
             <span class="surge-val font-mono" id="slider-rain-val">75 mm/h</span>
           </div>
 
+          <!-- Live Satellite Weather Sync Button -->
+          <button id="btn-live-weather" class="btn-secondary" title="Query Open-Meteo Satellite Feed for all 8 NER states">
+            <i class="fa-solid fa-satellite-dish text-cyan"></i>
+            <span id="txt-weather-mode">Live Satellite Weather</span>
+          </button>
+
+          <!-- SMS Carrier Gateway Config Button -->
+          <button id="btn-sms-modal" class="btn-secondary" title="Configure Phone Numbers & Fast2SMS Key">
+            <i class="fa-solid fa-comment-sms text-cyan"></i>
+            <span>SMS Gateway</span>
+          </button>
+
           <!-- Audio Alarm Button -->
           <button id="btn-audio-alert" class="btn-secondary">
             <i class="fa-solid fa-volume-high"></i> Audio Siren
@@ -547,6 +559,51 @@
       </div>
 
     </main>
+  </div>
+
+  <!-- SMS GATEWAY CONFIGURATION MODAL -->
+  <div id="modal-sms-gateway" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="fa-solid fa-tower-cell text-cyan"></i>
+          <span>Cellular Alert Gateway (Fast2SMS & Twilio)</span>
+        </div>
+        <button id="btn-close-sms-modal" class="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="text-sm text-muted mb-3">
+          Broadcast emergency landslide evacuation alerts directly to physical mobile SIM cards across all 8 North Eastern States.
+        </p>
+
+        <div class="form-group mb-3">
+          <label class="form-label text-xs font-mono">Recipient Mobile Number(s)</label>
+          <input type="text" id="sms-phone-input" class="form-input font-mono" placeholder="+919876543210, +919123456780" value="+919876543210">
+          <span class="form-hint">Enter your phone number (e.g. +91XXXXXXXXXX).</span>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="form-label text-xs font-mono">Fast2SMS API Key (Optional for physical delivery)</label>
+          <input type="password" id="sms-api-key-input" class="form-input font-mono" placeholder="Paste API Key (Leave blank to use SEOC Simulator)">
+          <span class="form-hint">
+            Get instant ₹50 free testing credits at <a href="https://www.fast2sms.com" target="_blank" style="color:#38bdf8;text-decoration:underline;">fast2sms.com</a>. If blank, runs in instant SEOC Audit simulator mode.
+          </span>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="form-label text-xs font-mono">Emergency Broadcast Message</label>
+          <textarea id="sms-custom-message" class="form-textarea font-mono" rows="3">EMERGENCY ALERT [SEOC 112]: Active slope failure predicted on Sikkim NH-10 Ranipool corridor. FoS &lt; 0.85. Evacuate uphill to designated relief camp immediately.</textarea>
+        </div>
+
+        <div id="sms-dispatch-status" class="status-box hidden font-mono text-xs"></div>
+      </div>
+      <div class="modal-footer flex gap-2">
+        <button id="btn-close-sms-modal-2" class="btn-secondary" style="flex:1;">Cancel</button>
+        <button id="btn-test-sms-dispatch" class="btn-primary-gradient" style="flex:2;">
+          <i class="fa-solid fa-paper-plane"></i> Dispatch Mobile SMS
+        </button>
+      </div>
+    </div>
   </div>
 
   <!-- Audio Siren Element -->
