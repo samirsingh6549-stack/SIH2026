@@ -4,8 +4,8 @@
   "description": "Unified Landslide Early Warning & Resilient Evacuation Network for the Eight Sisters of North East India",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#050814",
-  "theme_color": "#dc2626",
+  "background_color": "#F7F9FC",
+  "theme_color": "#0D9488",
   "icons": [
     {
       "src": "/icons.svg",
