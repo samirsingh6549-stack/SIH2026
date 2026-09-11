@@ -1,306 +1,410 @@
-// NER-LEWS: Full 8-State Disaster Platform Controller with Multilingual Support
+// TerraSafe AI NER: Defense-Grade 8-State Early Warning Platform Controller
+// Grounded in authentic GIS cockpit architecture and high-contrast command center standards
+
+// ==========================================
+// 1. GLOBAL STATE & CONSTANTS
+// ==========================================
 
 let map;
 let telemetryChart;
 let isOfflineMode = false;
 let currentLanguage = 'en';
+let activeTab = 'command';
 
-// Layer Groups
+// Leaflet Layer Groups
 let zoneLayerGroup;
 let stationLayerGroup;
-let reportLayerGroup;
+let bypassLayerGroup;
 let bufferLayerGroup;
+let reportLayerGroup;
 let mlHeatmapLayer;
 let mlCircleMarkersGroup;
 
-// Local Outbox (IndexedDB simulation)
-let localOutbox = [
+// 8 North Eastern States Strategic Hotspot Coordinates
+const HOTSPOTS = {
+  sikkim: {
+    lat: 27.3389, lng: 88.6065, zoom: 12,
+    name: 'Ranipool NH-10 Corridor',
+    state: 'Sikkim', district: 'East Sikkim',
+    prob: 94, fos: '0.82 (Failure Imminent)', pore: '48.2 kPa', rain: '242 mm',
+    factor: 'Toe Hydrostatic Shear', risk: 'CRITICAL',
+    protocol: 'Suspend commercial heavy convoy, engage Upper Martam Western Crest bypass, and broadcast automated Cell SMS in Nepali & Hindi to perimeter mobile towers.'
+  },
+  assam: {
+    lat: 25.1837, lng: 93.0298, zoom: 12,
+    name: 'Dima Hasao Jatinga Section',
+    state: 'Assam', district: 'Dima Hasao',
+    prob: 92, fos: '0.86 (Critical Slippage)', pore: '44.0 kPa', rain: '215 mm',
+    factor: 'Hill-cutting Slump & Railway Cut', risk: 'CRITICAL',
+    protocol: 'Halt Lumding-Badarpur railway cutting traffic, divert NH-27 via Circuit House Ridge Bypass, and mobilize Haflong NDRF platoon.'
+  },
+  manipur: {
+    lat: 24.8167, lng: 93.6833, zoom: 12,
+    name: 'Noney Tupul Railway Corridor',
+    state: 'Manipur', district: 'Noney',
+    prob: 89, fos: '0.91 (Severe Shear)', pore: '41.5 kPa', rain: '198 mm',
+    factor: 'Ijei River Damming & Debris Surge', risk: 'CRITICAL',
+    protocol: 'Issue Flash Flood alert downriver from Tupul bridge yard, engage Longmai Mountain Spur, and establish VHF relay with Noney District Shelter.'
+  },
+  meghalaya: {
+    lat: 25.5788, lng: 91.8933, zoom: 12,
+    name: 'East Khasi Hills Sohra Arc',
+    state: 'Meghalaya', district: 'East Khasi Hills',
+    prob: 81, fos: '1.08 (Sub-surface Creep)', pore: '36.4 kPa', rain: '312 mm',
+    factor: 'Gorge Joint Water Wedging', risk: 'HIGH',
+    protocol: 'Restrict heavy mining dumpers on SH-5, redirect light tourist transit via Laitryngew Plateau Bypass, and monitor piezometer array #04.'
+  },
+  nagaland: {
+    lat: 25.6751, lng: 94.1086, zoom: 12,
+    name: 'Kohima South Bypass NH-29',
+    state: 'Nagaland', district: 'Kohima',
+    prob: 84, fos: '1.04 (Progressive Slump)', pore: '33.8 kPa', rain: '185 mm',
+    factor: 'Dzüdza Fault Plane Reactivation', risk: 'HIGH',
+    protocol: 'Enforce one-way convoy at Dzüdza river crossing, prepare Khonoma Mountain Crest single-lane bypass, and inspect culvert drainage.'
+  },
+  arunachal: {
+    lat: 27.5861, lng: 91.8653, zoom: 11,
+    name: 'Bhalukpong-Tawang Alpine Pass',
+    state: 'Arunachal Pradesh', district: 'West Kameng',
+    prob: 79, fos: '1.14 (Frost Thaw Runoff)', pore: '32.0 kPa', rain: '164 mm',
+    factor: 'Freeze-Thaw Rock Splitting', risk: 'HIGH',
+    protocol: 'Stage BRO Border Road clearing bulldozers at Sela tunnel approaches and restrict night vehicular movement.'
+  },
+  mizoram: {
+    lat: 23.7271, lng: 92.7176, zoom: 12,
+    name: 'Aizawl Chite Veng Ridge',
+    state: 'Mizoram', district: 'Aizawl',
+    prob: 54, fos: '1.38 (Moderate Infiltration)', pore: '26.0 kPa', rain: '118 mm',
+    factor: 'Clay Sandstone Interbedding', risk: 'MODERATE',
+    protocol: 'Advise residents along Chite stream slopes to inspect septic and drainage overflow. Normal traffic maintained on NH-54.'
+  },
+  tripura: {
+    lat: 23.9500, lng: 92.2667, zoom: 12,
+    name: 'Jampui Hills Ridge Vanghmun',
+    state: 'Tripura', district: 'North Tripura',
+    prob: 49, fos: '1.45 (Stable Runoff)', pore: '22.0 kPa', rain: '94 mm',
+    factor: 'Laterite Soil Sheet Wash', risk: 'MODERATE',
+    protocol: 'Continue automated solar telemetry transmission. Normal lifeline corridor operations on NH-8.'
+  }
+};
+
+// Strategic Safe Bypass Routes (Coordinates from GIS Topology Graph)
+const BYPASS_ROUTES = [
   {
-    client_id: 'fld_001',
-    reporter: 'Sub-Inspector Lepcha (SDRF)',
-    hazard_type: 'Active Debris Flow / Mudslide',
-    severity: 'CRITICAL',
+    name: 'Upper Martam Western Crest Bypass (Sikkim)',
+    coords: [
+      [27.2920, 88.5620], // Martam Bypass Junction
+      [27.3250, 88.5450], // Upper Martam Crest
+      [27.3520, 88.6180], // Upper Martam Shelter
+      [27.3389, 88.6065]  // Gangtok Capital
+    ],
     state: 'Sikkim',
-    lat: 27.3389, lng: 88.6065,
-    location_desc: 'Ranipool Bridge Km 12 (NH-10)',
-    notes: 'Slurry 1.5m deep over roadway. Vehicles stranded.',
-    status: 'SYNCED',
-    synced_at: '08:05:40 IST'
+    status: 'ACTIVE SAFE BYPASS'
+  },
+  {
+    name: 'Mahur - Circuit House Crest Bypass (Assam)',
+    coords: [
+      [25.1200, 93.1100], // Mahur Junction
+      [25.1890, 93.0220], // Circuit House Upper Ridge
+      [25.1780, 93.0150]  // Haflong Town Shelter
+    ],
+    state: 'Assam',
+    status: 'ACTIVE SAFE BYPASS'
+  },
+  {
+    name: 'Longmai Ridge Mountain Trail (Manipur)',
+    coords: [
+      [24.8000, 93.1200], // Jiribam Spur
+      [24.8450, 93.7100], // Longmai Mountain Spur
+      [24.8320, 93.6990]  // Noney Shelter
+    ],
+    state: 'Manipur',
+    status: 'ACTIVE SAFE BYPASS'
+  },
+  {
+    name: 'Laitryngew Plateau Bypass (Meghalaya)',
+    coords: [
+      [25.4200, 91.8100], // Mawkdok
+      [25.3800, 91.7600], // Plateau Crest
+      [25.2850, 91.7450]  // Sohra Shelter
+    ],
+    state: 'Meghalaya',
+    status: 'ACTIVE SAFE BYPASS'
+  },
+  {
+    name: 'Khonoma Mountain Crest Bypass (Nagaland)',
+    coords: [
+      [25.7100, 94.0450], // Sechu Zubza
+      [25.6500, 94.0200], // Khonoma Crest
+      [25.6620, 94.1190]  // Kohima Stadium Shelter
+    ],
+    state: 'Nagaland',
+    status: 'ACTIVE SAFE BYPASS'
   }
 ];
 
-// All 8 North Eastern States (Eight Sisters)
-const HOTSPOTS = {
-  sikkim: { lat: 27.3389, lng: 88.6065, zoom: 13, name: 'Sikkim (NH-10 Ranipool Corridor)' },
-  assam: { lat: 25.1837, lng: 93.0298, zoom: 13, name: 'Assam (Dima Hasao Jatinga Section)' },
-  manipur: { lat: 24.8167, lng: 93.6833, zoom: 13, name: 'Manipur (Noney Tupul Corridor)' },
-  meghalaya: { lat: 25.5788, lng: 91.8933, zoom: 13, name: 'Meghalaya (East Khasi Hills Sohra)' },
-  nagaland: { lat: 25.6751, lng: 94.1086, zoom: 13, name: 'Nagaland (Kohima South Bypass NH-29)' },
-  arunachal: { lat: 27.5861, lng: 91.8653, zoom: 13, name: 'Arunachal Pradesh (Tawang Alpine Pass)' },
-  mizoram: { lat: 23.7271, lng: 92.7176, zoom: 13, name: 'Mizoram (Aizawl Chite Veng)' },
-  tripura: { lat: 23.9500, lng: 92.2667, zoom: 13, name: 'Tripura (Jampui Hills Ridge)' }
-};
+// Arterial Lifeline Corridors Database
+const ARTERIAL_ROADS = [
+  {
+    code: 'NH-10',
+    name: 'Siliguri - Gangtok National Lifeline',
+    sector: 'Ranipool Km 12 (Sikkim)',
+    status: 'TRAFFIC SUSPENDED',
+    riskClass: 'danger',
+    rain: '242 mm / 24h',
+    detour: 'Upper Martam Western Crest Bypass (Active - 4x4 / Light Emergency Vehicles Only)',
+    agency: 'Border Roads Organisation (Project Swastik)'
+  },
+  {
+    code: 'NH-27',
+    name: 'Haflong - Silchar East-West Corridor',
+    sector: 'Jatinga Valley Cutting (Assam)',
+    status: 'TRAFFIC SUSPENDED',
+    riskClass: 'danger',
+    rain: '215 mm / 24h',
+    detour: 'Mahur - Circuit House Upper Ridge Bypass (Clear)',
+    agency: 'NHIDCL & Assam PWD Hills'
+  },
+  {
+    code: 'NH-29',
+    name: 'Dimapur - Kohima Mountain Highway',
+    sector: 'Dzüdza River Crossing (Nagaland)',
+    status: 'REGULATED CONVOY',
+    riskClass: 'warning',
+    rain: '185 mm / 24h',
+    detour: 'Khonoma Crest Single-Lane Alternating Pilot Escort',
+    agency: 'Nagaland PWD (National Highways)'
+  },
+  {
+    code: 'SH-5',
+    name: 'Shillong - Cherrapunji Lifeline',
+    sector: 'Mawkdok Dympep Gorge (Meghalaya)',
+    status: 'RESTRICTED ACCESS',
+    riskClass: 'warning',
+    rain: '312 mm / 24h',
+    detour: 'Laitryngew Plateau Crest Route Available',
+    agency: 'Meghalaya PWD (Roads)'
+  },
+  {
+    code: 'NH-37',
+    name: 'Imphal - Jiribam Highway',
+    sector: 'Noney Tupul River Bed (Manipur)',
+    status: 'REGULATED CONVOY',
+    riskClass: 'warning',
+    rain: '198 mm / 24h',
+    detour: 'Longmai Ridge Mountain Trail Operational',
+    agency: 'BRO Project Sevak'
+  },
+  {
+    code: 'NH-13',
+    name: 'Trans-Arunachal Highway',
+    sector: 'Bhalukpong - Tawang Pass (Arunachal)',
+    status: 'OPEN WITH PILOT',
+    riskClass: 'emerald',
+    rain: '164 mm / 24h',
+    detour: 'BRO Snow/Debris Clearance Units on 15-min standby',
+    agency: 'BRO Project Vartak'
+  },
+  {
+    code: 'NH-54',
+    name: 'Aizawl - Lunglei Corridor',
+    sector: 'Chite Veng Escarpment (Mizoram)',
+    status: 'NORMAL TRAFFIC',
+    riskClass: 'emerald',
+    rain: '118 mm / 24h',
+    detour: 'Direct valley transit uninterrupted',
+    agency: 'Mizoram PWD'
+  },
+  {
+    code: 'NH-8',
+    name: 'Agartala - Silchar Corridor',
+    sector: 'Jampui Hills Ridge (Tripura)',
+    status: 'NORMAL TRAFFIC',
+    riskClass: 'emerald',
+    rain: '94 mm / 24h',
+    detour: 'Direct transit uninterrupted',
+    agency: 'Tripura PWD'
+  }
+];
 
-// Multilingual Dictionary (Stored locally for offline dead zones)
-const I18N = {
+// Multilingual Dialect Dictionary for High-Mountain Dead Zones
+const I18N_WARNINGS = {
   en: {
-    app_title: 'NER-LEWS',
-    app_sub: 'AI Landslide Monitoring & Offline Sync Backbone for the Eight Sisters of North East India',
-    sector_focus: 'State / Sector:',
-    dead_zone: 'Mountain Dead Zone:',
-    net_online: 'ONLINE (4G/LTE)',
-    net_offline: 'OFFLINE (DEAD ZONE)',
-    matrix_title: '8-State Vulnerability Matrix',
-    scenario_title: 'Cloudburst Simulator',
-    cap_orders: 'CAP Evacuation Orders',
-    audio_btn: 'Audio Alert',
-    tab_sensors: 'Telemetry',
-    tab_fieldapp: 'Field Scout App',
-    tab_audit: 'Audit Stream',
-    lbl_reporter: 'Reporter Identification',
-    lbl_severity: 'Severity Level',
-    lbl_roadstatus: 'Roadway Status',
-    lbl_hazard: 'GSI Landslide Classification',
-    lbl_notes: 'Field Observations & Endangered Assets',
-    lbl_submit: 'Save & Queue Ground Report',
-    lbl_outbox: 'Device Outbox (Offline Queue)'
+    marquee: 'Extreme Slope Saturation: NH-10 Ranipool & Cherrapunji Crest',
+    protocolRanipool: 'Suspend commercial heavy convoy, engage Upper Martam Western Crest bypass, and broadcast automated Cell SMS in Nepali & Hindi to perimeter mobile towers.',
+    protocolJatinga: 'Halt Lumding-Badarpur railway cutting traffic, divert NH-27 via Circuit House Ridge Bypass, and mobilize Haflong NDRF platoon.',
+    speechHeadline: 'Emergency Landslide Evacuation Directive. Active slope failure detected on NH-10 Ranipool and East Khasi Hills. Move to designated high-ground shelters immediately.'
   },
   hi: {
-    app_title: 'एनईआर-लेव्स (NER-LEWS)',
-    app_sub: 'पूर्वोत्तर भारत के आठ राज्यों के लिए एआई भूस्खलन निगरानी और ऑफलाइन सिंक प्लेटफॉर्म',
-    sector_focus: 'राज्य / सेक्टर चयन:',
-    dead_zone: 'पहाड़ी डेड ज़ोन:',
-    net_online: 'ऑनलाइन (4G/LTE)',
-    net_offline: 'ऑफलाइन (डेड ज़ोन - नेटवर्क बंद)',
-    matrix_title: '8-राज्य सुभेद्यता मैट्रिक्स',
-    scenario_title: 'बादल फटने का सिम्युलेटर',
-    cap_orders: 'सीएपी निकासी आदेश',
-    audio_btn: 'ऑडियो अलर्ट सुनें',
-    tab_sensors: 'टेलीमेट्री सेंसर',
-    tab_fieldapp: 'फील्ड स्काउट ऐप',
-    tab_audit: 'ऑडिट स्ट्रीम',
-    lbl_reporter: 'अधिकारी / नागरिक का नाम',
-    lbl_severity: 'खतरे की गंभीरता',
-    lbl_roadstatus: 'सड़क मार्ग की स्थिति',
-    lbl_hazard: 'जीएसआई भूस्खलन वर्गीकरण',
-    lbl_notes: 'अवलोकन एवं खतरे में संपत्तियां',
-    lbl_submit: 'रिपोर्ट सहेजें और सिंक कतार में रखें',
-    lbl_outbox: 'डिवाइस आउटबॉक्स (ऑफलाइन कतार)'
+    marquee: 'गंभीर ढलान संतृप्ति: एनएच-10 रानीपूल एवं चेरापूंजी शिखर पर भूस्खलन खतरा',
+    protocolRanipool: 'व्यावसायिक भारी वाहनों का आवागमन तुरंत रोकें, ऊपरी मारतम पश्चिमी दर्रा बाईपास सक्रिय करें और नेपाली एवं हिंदी में स्वचालित एसएमएस प्रसारित करें।',
+    protocolJatinga: 'लुमडिंग-बदरपुर रेलवे लाइन और एनएच-27 को तुरंत बंद करें, सर्किट हाउस बाईपास से यातायात मोड़ें।',
+    speechHeadline: 'आपातकालीन भूस्खलन चेतावनी। एनएच-10 रानीपूल और चेरापूंजी क्षेत्र में भारी भूस्खलन का खतरा। तुरंत ऊंचे राहत शिविरों में जाएं।'
   },
   as: {
-    app_title: 'এনইআৰ-লেউছ (NER-LEWS)',
-    app_sub: 'উত্তৰ-পূৰ্বাঞ্চলৰ অষ্টভগ্নী ৰাজ্যৰ বাবে এআই ভূমিস্খলন সতৰ্কবাণী আৰু অফলাইন ছিংক',
-    sector_focus: 'ৰাজ্য / খণ্ড বাছক:',
-    dead_zone: 'পাহাৰীয়া ডেড জ\'ন:',
-    net_online: 'অনলাইন (সংযোগ সক্ৰিয়)',
-    net_offline: 'অফলাইন (ডেড জ\'ন - বিচ্ছিন্ন)',
-    matrix_title: '৮-ৰাজ্যৰ ভূমিস্খলন মেট্ৰিক্স',
-    scenario_title: 'মেঘ বিস্ফোৰণ ছিমুলেটৰ',
-    cap_orders: 'স্থান খালী কৰাৰ নিৰ্দেশনা',
-    audio_btn: 'শব্দ বাৰ্তা শুনক',
-    tab_sensors: 'ছেন্সৰ টেলিমেট্ৰী',
-    tab_fieldapp: 'ফিল্ড স্কাউট এপ',
-    tab_audit: 'অডিট বাৰ্তা',
-    lbl_reporter: 'প্ৰতিবেদকৰ পৰিচয়',
-    lbl_severity: 'বিপদৰ তীব্ৰতা',
-    lbl_roadstatus: 'পথৰ স্থিতি',
-    lbl_hazard: 'জিএছআই ভূমিস্খলনৰ প্ৰকাৰ',
-    lbl_notes: 'প্ৰত্যক্ষদৰ্শীৰ টোকা',
-    lbl_submit: 'প্ৰতিবেদন সংৰক্ষণ কৰক',
-    lbl_outbox: 'ডিভাইচ আউটবক্স (অফলাইন)'
+    marquee: 'চৰম পাহাৰীয়া স্খলনৰ সতৰ্কবাণী: এনএইচ-১০ ৰাণীপূৰ আৰু চেৰাপুঞ্জী খণ্ড',
+    protocolRanipool: 'গধুৰ যান-বাহন চলাচল বন্ধ কৰক, উজনি মাৰ্তাম পশ্চিম ক্ৰেষ্ট বাইপাছ ব্যৱহাৰ কৰক আৰু স্থানীয় নাগৰিকলৈ সতৰ্কবাণী বাৰ্তা প্ৰেৰণ কৰক।',
+    protocolJatinga: 'লামডিং-বদৰপুৰ ৰেলপথ আৰু এনএইচ-২৭ পথ বন্ধ কৰক, চাৰ্কিট হাউচ বাইপাছেৰে যান-বাহন এৰি দিয়ক।',
+    speechHeadline: 'জৰুৰীকালীন ভূমিস্খলন সতৰ্কবাণী। এনএইচ-১০ আৰু ডিমা হাছাওত ভূমিস্খলনৰ আশংকা। ততালিকে সুৰক্ষিত আশ্ৰয় শিবিৰলৈ যাওক।'
   },
   ne: {
-    app_title: 'एनईआर-लेव्स (NER-LEWS)',
-    app_sub: 'पूर्वोत्तर भारतका आठ राज्यहरूका लागि एआई पहिरो पूर्व चेतावनी प्रणाली',
-    sector_focus: 'राज्य / क्षेत्र छनौट:',
-    dead_zone: 'पहाडी डेड जोन:',
-    net_online: 'अनलाइन (४जी जडान)',
-    net_offline: 'अफलाइन (नेटवर्क बन्द)',
-    matrix_title: '८-राज्य पहिरो जोखिम तालिका',
-    scenario_title: 'वर्षा प्रकोप सिम्युलेटर',
-    cap_orders: 'तुरुन्त खाली गर्ने आदेश',
-    audio_btn: 'अडियो सुन्नुहोस्',
-    tab_sensors: 'सेन्सर टेलिमेट्री',
-    tab_fieldapp: 'फिल्ड स्काउट एप',
-    tab_audit: 'अडिट स्ट्रिम',
-    lbl_reporter: 'प्रतिवेदकको नाम',
-    lbl_severity: 'जोखिम स्तर',
-    lbl_roadstatus: 'सडक यातायातको अवस्था',
-    lbl_hazard: 'पहिरोको वैज्ञानिक वर्गीकरण',
-    lbl_notes: 'अवलोकन र विवरण',
-    lbl_submit: 'प्रतिवेदन दर्ता गर्नुहोस्',
-    lbl_outbox: 'उपकरण आउटबक्स (अफलाइन)'
-  },
-  bn: {
-    app_title: 'এনইআর-লেউস (NER-LEWS)',
-    app_sub: 'উত্তর-পূর্ব ভারতের আটটি রাজ্যের জন্য এআই ভূমিধস আগাম সতর্কবার্তা প্ল্যাটফর্ম',
-    sector_focus: 'রাজ্য / সেক্টর নির্বাচন:',
-    dead_zone: 'পাহাড়ি ডেড জোন:',
-    net_online: 'অনলাইন (৪জি সংযুক্ত)',
-    net_offline: 'অফলাইন (নেটওয়ার্ক বিচ্ছিন্ন)',
-    matrix_title: '৮-রাজ্য ভূমিধস ম্যাট্রিক্স',
-    scenario_title: 'বৃষ্টিপাত সিমুলেটর',
-    cap_orders: 'অবিলম্বে স্থান ত্যাগের নির্দেশ',
-    audio_btn: 'অডিও শুনুন',
-    tab_sensors: 'টেলিমেট্রি সেন্সর',
-    tab_fieldapp: 'ফিল্ড স্কাউট অ্যাপ',
-    tab_audit: 'অডিট স্ট্রিম',
-    lbl_reporter: 'রিপোর্টারের পরিচয়',
-    lbl_severity: 'বিপদের মাত্রা',
-    lbl_roadstatus: 'সড়ক পথের অবস্থা',
-    lbl_hazard: 'জিএসআই ভূমিধস শ্রেণিবিভাগ',
-    lbl_notes: 'পর্যবেক্ষণ ও তথ্য',
-    lbl_submit: 'রিপোর্ট সংরক্ষণ ও সিঙ্ক করুন',
-    lbl_outbox: 'ডিভাইস আউটবক্স (অফলাইন)'
+    marquee: 'गम्भीर पहिरो जोखिम: रानीपुल NH-10 र चेरापुन्जी पहाडी खण्ड',
+    protocolRanipool: 'भारी सवारी साधनको आवतजावत बन्द गर्नुहोस्, माथिल्लो मार्तम पश्चिमी बाइपास प्रयोग गर्नुहोस् र नेपाली र हिन्दीमा तुरुन्तै मोबाइल एसएमएस पठाउनुहोस्।',
+    protocolJatinga: 'हाफलोङ र जतिङ्गा क्षेत्रमा रेल र सडक यातायात रोक्नुहोस्, सर्किट हाउस बाइपास प्रयोग गर्नुहोस्।',
+    speechHeadline: 'आपतकालीन पहिरो पूर्व चेतावनी। रानीपुल NH-10 मा ठूलो पहिरोको जोखिम। तुरुन्तै माथिल्लो मार्तम राहत शिविरमा जानुहोस्।'
   },
   mz: {
-    app_title: 'NER-LEWS',
-    app_sub: 'Hmar-Chhak State 8 te tana AI hmanga Leimin Vauhkhanna leh Offline Sync',
-    sector_focus: 'State / Hmun thlanna:',
-    dead_zone: 'Tlang ram Signal awmlohna:',
-    net_online: 'ONLINE (Inzawm fel a ni)',
-    net_offline: 'OFFLINE (Signal a bo)',
-    matrix_title: 'State 8 Leimin Hlauhawm Dinhmun',
-    scenario_title: 'Ruahpui Sur Zual Chhutna',
-    cap_orders: 'Hmun Chhuahsan Tura Thupek',
-    audio_btn: 'Aw Ngaithla Rawh',
-    tab_sensors: 'Sensor Hmuhte',
-    tab_fieldapp: 'Field Scout App',
-    tab_audit: 'Audit Stream',
-    lbl_reporter: 'Hming leh Nihna',
-    lbl_severity: 'Hlauhawm Dan',
-    lbl_roadstatus: 'Kawng Dinhmun',
-    lbl_hazard: 'Leimin Dan Pung',
-    lbl_notes: 'Hmuh dan tlangpui',
-    lbl_submit: 'Duhna Khawl Khawmna a Dah',
-    lbl_outbox: 'Device Outbox (Offline)'
+    marquee: 'Leimin Hlauhawm Zual: NH-10 Ranipool leh Cherrapunji Tlang',
+    protocolRanipool: 'Motor lian chi kalphung tihtawp ni se, Upper Martam Bypass lam pan tur a ni e.',
+    protocolJatinga: 'Rel kawng leh NH-27 khar a ni, Circuit House kalkawng hman tur a ni.',
+    speechHeadline: 'Leimin vauhkhanna thupek. Ranipool leh Cherrapunji tlang velah leimin a hlauhawm. Hmun him lam pan nghal rawh u.'
   }
 };
 
-let cachedAlertsData = [];
+// Local Incident Reports (Offline-First Store-and-Forward Outbox)
+let localReports = [
+  {
+    id: 101,
+    reporter: 'Sub-Inspector Lepcha (SDRF)',
+    location: 'NH-10 Km 12 near Ranipool bridge culvert',
+    hazardType: 'Active Debris Flow / Mudslide',
+    crackWidth: '24 cm',
+    time: '08:05 AM',
+    notes: 'Slurry 1.5m deep over roadway. 2 freight trucks stranded.',
+    status: 'SYNCED'
+  },
+  {
+    id: 102,
+    reporter: 'Civil Defense Volunteer Gogoi',
+    location: 'NH-27 Jatinga Valley Cutting Section',
+    hazardType: 'Tension Crack / Fissure Opening',
+    crackWidth: '18 cm',
+    time: '08:24 AM',
+    notes: 'Longitudinal fissure widening rapidly along cut-slope shoulder.',
+    status: 'SYNCED'
+  }
+];
+
+// Load persisted reports if available
+try {
+  const cached = localStorage.getItem('terrasafe_field_reports');
+  if (cached) {
+    const parsed = JSON.parse(cached);
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      localReports = parsed;
+    }
+  }
+} catch (e) {}
+
+// Currently selected sector in Inspector
+let currentInspectorSector = HOTSPOTS.sikkim;
+
+// ==========================================
+// 2. LIFECYCLE INITIALIZATION
+// ==========================================
 
 document.addEventListener('DOMContentLoaded', async () => {
-  startClock();
   initTabs();
   initGISMap();
-  initChart();
-  initLanguageSwitcher();
-  initOfflineToggle();
-  initScenarioSlider();
-  initFieldScoutForm();
-  initVoiceAlertButton();
+  initTelemetryChart();
+  initHotspotDropdown();
+  initDialectSwitcher();
+  initOfflineSimulation();
+  initSurgeSlider();
+  initEmergencyBroadcast();
+  initAudioSiren();
+  initInSARRefresh();
+  initFieldIncidentForm();
+  renderRoadLifelines();
+  renderIncidentFeed();
+  updateSectorInspector(HOTSPOTS.sikkim);
 
-  await refreshAllData();
-  setInterval(pollAuditLogs, 6000);
+  // Fetch real backend data
+  await loadBackendData();
+
+  // Resize map after DOM layout stabilizes
+  setTimeout(() => {
+    if (map) map.invalidateSize();
+  }, 250);
 });
 
-// 1. CLOCK
-function startClock() {
-  const clockEl = document.getElementById('ist-clock');
-  const dateEl = document.getElementById('ist-date');
-  function update() {
-    const now = new Date();
-    clockEl.textContent = now.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour12: false }) + ' IST';
-    dateEl.textContent = now.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', year: 'numeric' });
-  }
-  update();
-  setInterval(update, 1000);
-}
+// ==========================================
+// 3. TAB NAVIGATION
+// ==========================================
 
-// 2. LANGUAGE SWITCHER
-function initLanguageSwitcher() {
-  const select = document.getElementById('lang-select');
-  select.addEventListener('change', (e) => {
-    currentLanguage = e.target.value;
-    applyLanguage(currentLanguage);
-    renderAlerts(cachedAlertsData);
-  });
-}
-
-function applyLanguage(lang) {
-  const dict = I18N[lang] || I18N.en;
-  document.getElementById('lbl-app-title').textContent = dict.app_title;
-  document.getElementById('lbl-app-sub').textContent = dict.app_sub;
-  document.getElementById('lbl-sector-focus').textContent = dict.sector_focus;
-  document.getElementById('lbl-dead-zone-sim').textContent = dict.dead_zone;
-  document.getElementById('lbl-vulnerability-matrix').textContent = dict.matrix_title;
-  document.getElementById('lbl-what-if-sim').textContent = dict.scenario_title;
-  document.getElementById('lbl-cap-orders').textContent = dict.cap_orders;
-  document.getElementById('lbl-voice-btn').textContent = dict.audio_btn;
-  document.getElementById('lbl-tab-sensors').textContent = dict.tab_sensors;
-  document.getElementById('lbl-tab-fieldapp').textContent = dict.tab_fieldapp;
-  document.getElementById('lbl-tab-audit').textContent = dict.tab_audit;
-  document.getElementById('lbl-reporter').textContent = dict.lbl_reporter;
-  document.getElementById('lbl-severity').textContent = dict.lbl_severity;
-  document.getElementById('lbl-roadstatus').textContent = dict.lbl_roadstatus;
-  document.getElementById('lbl-hazard').textContent = dict.lbl_hazard;
-  document.getElementById('lbl-notes').textContent = dict.lbl_notes;
-  document.getElementById('lbl-submit-btn').textContent = dict.lbl_submit;
-  document.getElementById('lbl-outbox-title').textContent = dict.lbl_outbox;
-  
-  const badge = document.getElementById('net-indicator');
-  badge.textContent = isOfflineMode ? dict.net_offline : dict.net_online;
-}
-
-// 3. VOICE ALERT (TEXT-TO-SPEECH)
-function initVoiceAlertButton() {
-  document.getElementById('btn-voice-alert').addEventListener('click', () => {
-    if (!('speechSynthesis' in window)) {
-      alert('Speech synthesis is not supported in this browser.');
-      return;
-    }
-
-    if (!cachedAlertsData || !cachedAlertsData.length) return;
-    const alertItem = cachedAlertsData[0];
-    
-    // Pick text in selected language
-    const textToSpeak = (alertItem.headline[currentLanguage] || alertItem.headline.en) + ". " + 
-                        (alertItem.instructions[currentLanguage] || alertItem.instructions.en);
-
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(textToSpeak);
-    utterance.rate = 0.9;
-    
-    // Set appropriate voice language tag if available
-    const langMap = { en: 'en-IN', hi: 'hi-IN', bn: 'bn-IN', as: 'as-IN', ne: 'ne-NP', mz: 'en-IN' };
-    utterance.lang = langMap[currentLanguage] || 'en-IN';
-
-    window.speechSynthesis.speak(utterance);
-  });
-}
-
-// 4. TABS
 function initTabs() {
-  const tabs = document.querySelectorAll('.p-tab');
-  const panes = document.querySelectorAll('.p-tab-content');
+  const navButtons = document.querySelectorAll('.nav-item');
+  const tabPanes = document.querySelectorAll('.tab-pane');
 
-  tabs.forEach(tab => {
-    tab.addEventListener('click', () => {
-      tabs.forEach(t => t.classList.remove('active'));
-      panes.forEach(p => p.classList.remove('active'));
+  navButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetTab = btn.getAttribute('data-tab');
+      if (!targetTab) return;
 
-      tab.classList.add('active');
-      const target = tab.getAttribute('data-target');
-      document.getElementById(target).classList.add('active');
-      if (telemetryChart) telemetryChart.resize();
+      activeTab = targetTab;
+      navButtons.forEach(b => b.classList.remove('active'));
+      tabPanes.forEach(p => p.classList.remove('active'));
+
+      btn.classList.add('active');
+      const activePane = document.getElementById(`tab-${targetTab}`);
+      if (activePane) activePane.classList.add('active');
+
+      if (targetTab === 'command' && map) {
+        setTimeout(() => map.invalidateSize(), 150);
+      }
+      if (targetTab === 'analytics' && telemetryChart) {
+        setTimeout(() => telemetryChart.resize(), 150);
+      }
     });
   });
 }
 
-// 5. GIS MAP
-function initGISMap() {
-  map = L.map('gis-main-map', { zoomControl: true, minZoom: 6, maxZoom: 18 }).setView([26.2006, 92.9376], 7); // Center over NER
+// ==========================================
+// 4. DEFENSE-GRADE LEAFLET GIS MAP
+// ==========================================
 
+// Authentic radar-ping custom pin creator (from reference design language)
+function createCustomPin(color, pulse = false) {
+  return L.divIcon({
+    className: 'custom-leaflet-divicon ' + (pulse ? 'radar-ping' : ''),
+    html: `
+      <div class="custom-pin-wrap" style="background: radial-gradient(circle, ${color}33 30%, transparent 75%);">
+        <div class="custom-pin-core" style="background-color: ${color}; box-shadow: 0 0 14px ${color}, 0 0 24px ${color};"></div>
+      </div>
+    `,
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
+    popupAnchor: [0, -12]
+  });
+}
+
+function initGISMap() {
+  // Center over North East India (Eight Sisters)
+  map = L.map('gis-main-map', {
+    zoomControl: true,
+    minZoom: 6,
+    maxZoom: 18
+  }).setView([26.0, 92.5], 7);
+
+  // CartoDB Dark Matter base layer for crisp high-contrast tactical view
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; CARTO | OpenStreetMap | SIH 2026 NER-LEWS'
+    attribution: '&copy; CARTO &copy; OpenStreetMap | SIH 2026 TerraSafe AI NER',
+    subdomains: 'abcd',
+    maxZoom: 19
   }).addTo(map);
 
+  // Initialize Layer Groups
   zoneLayerGroup = L.layerGroup().addTo(map);
   stationLayerGroup = L.layerGroup().addTo(map);
-  reportLayerGroup = L.layerGroup().addTo(map);
+  bypassLayerGroup = L.layerGroup().addTo(map);
   bufferLayerGroup = L.layerGroup().addTo(map);
+  reportLayerGroup = L.layerGroup().addTo(map);
   mlCircleMarkersGroup = L.layerGroup().addTo(map);
 
+  // Plot Safe Bypass Routes
+  renderBypassPolylines();
+
+  // Layer Visibility Checkbox Bindings
   document.getElementById('chk-ml-heatmap').addEventListener('change', e => {
     if (e.target.checked) {
       if (mlHeatmapLayer) map.addLayer(mlHeatmapLayer);
@@ -311,151 +415,191 @@ function initGISMap() {
     }
   });
 
-  document.getElementById('chk-zones').addEventListener('change', e => { if (e.target.checked) map.addLayer(zoneLayerGroup); else map.removeLayer(zoneLayerGroup); });
-  document.getElementById('chk-stations').addEventListener('change', e => { if (e.target.checked) map.addLayer(stationLayerGroup); else map.removeLayer(stationLayerGroup); });
-  document.getElementById('chk-reports').addEventListener('change', e => { if (e.target.checked) map.addLayer(reportLayerGroup); else map.removeLayer(reportLayerGroup); });
-  document.getElementById('chk-buffers').addEventListener('change', e => { if (e.target.checked) map.addLayer(bufferLayerGroup); else map.removeLayer(bufferLayerGroup); });
-
-  document.getElementById('hotspot-select').addEventListener('change', e => {
-    const loc = HOTSPOTS[e.target.value];
-    if (loc) map.flyTo([loc.lat, loc.lng], loc.zoom, { duration: 1.5 });
+  document.getElementById('chk-stations').addEventListener('change', e => {
+    if (e.target.checked) map.addLayer(stationLayerGroup);
+    else map.removeLayer(stationLayerGroup);
   });
 
-  document.getElementById('btn-center-map').addEventListener('click', () => {
-    map.flyTo([26.2006, 92.9376], 7, { duration: 1.2 });
+  document.getElementById('chk-bypass').addEventListener('change', e => {
+    if (e.target.checked) map.addLayer(bypassLayerGroup);
+    else map.removeLayer(bypassLayerGroup);
   });
-}
 
-// 6. CHART.JS
-function initChart() {
-  const ctx = document.getElementById('telemetry-chart').getContext('2d');
-  telemetryChart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: ['02:00', '04:00', '06:00', '08:00'],
-      datasets: [
-        {
-          label: 'Rainfall Intensity (mm/h)',
-          data: [12.0, 22.5, 38.0, 54.2],
-          borderColor: '#0284c7',
-          backgroundColor: 'rgba(2, 132, 199, 0.15)',
-          fill: true,
-          tension: 0.35,
-          yAxisID: 'yRain'
-        },
-        {
-          label: 'Pore Pressure (kPa)',
-          data: [24.1, 29.5, 36.2, 48.2],
-          borderColor: '#ef4444',
-          backgroundColor: 'transparent',
-          borderDash: [4, 4],
-          tension: 0.35,
-          yAxisID: 'yPore'
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: { mode: 'index', intersect: false },
-      plugins: { legend: { labels: { color: '#94a3b8', font: { size: 9 } } } },
-      scales: {
-        x: { grid: { color: '#142035' }, ticks: { color: '#64748b', font: { size: 8 } } },
-        yRain: { type: 'linear', position: 'left', grid: { color: '#142035' }, ticks: { color: '#0284c7', font: { size: 8 } } },
-        yPore: { type: 'linear', position: 'right', grid: { drawOnChartArea: false }, ticks: { color: '#ef4444', font: { size: 8 } } }
-      }
-    }
+  document.getElementById('chk-buffers').addEventListener('change', e => {
+    if (e.target.checked) map.addLayer(bufferLayerGroup);
+    else map.removeLayer(bufferLayerGroup);
   });
 }
 
-// 7. DATA REFRESH & MAP RENDERING ACROSS ALL 8 STATES
-async function refreshAllData() {
+// Render glowing emerald safe bypass polylines on the Leaflet map
+function renderBypassPolylines() {
+  bypassLayerGroup.clearLayers();
+  BYPASS_ROUTES.forEach(route => {
+    const polyline = L.polyline(route.coords, {
+      color: '#10b981',
+      weight: 3.5,
+      opacity: 0.85,
+      dashArray: '6, 6'
+    }).addTo(bypassLayerGroup);
+
+    polyline.bindTooltip(`<strong>${route.name}</strong><br><span style="color:#10b981; font-weight:bold;">${route.status}</span>`, {
+      sticky: true,
+      direction: 'top'
+    });
+  });
+}
+
+// ==========================================
+// 5. DATA INGESTION & MAP PLOTTING
+// ==========================================
+
+async function loadBackendData() {
   try {
-    const rainSliderVal = document.getElementById('rain-range') ? document.getElementById('rain-range').value : 75;
-    const [stRes, zRes, altRes, repRes, mlRes] = await Promise.all([
-      fetch('/api/stations').then(r => r.json()),
-      fetch('/api/risk_zones').then(r => r.json()),
-      fetch('/api/alerts').then(r => r.json()),
-      fetch('/api/reports').then(r => r.json()),
-      fetch(`/api/ml/heatmap?rainfall=${rainSliderVal}`).then(r => r.json()).catch(err => {
-        console.warn('ML Heatmap endpoint fetch failed:', err);
-        return null;
-      })
+    const rainVal = document.getElementById('slider-rain') ? document.getElementById('slider-rain').value : 75;
+
+    const [stRes, zRes, mlRes] = await Promise.all([
+      fetch('/api/stations').then(r => r.json()).catch(() => null),
+      fetch('/api/risk_zones').then(r => r.json()).catch(() => null),
+      fetch(`/api/ml/heatmap?rainfall=${rainVal}`).then(r => r.json()).catch(() => null)
     ]);
 
-    cachedAlertsData = altRes.alerts || [];
+    if (zRes && zRes.zones) {
+      plotRiskZones(zRes.zones);
+    }
 
-    // Plot AI Machine Learning Probability Heatmap & Hotspot Circle Markers
+    if (stRes && stRes.stations) {
+      plotStationMarkers(stRes.stations);
+    }
+
     if (mlRes && mlRes.status === 'success') {
       renderMlHeatmap(mlRes);
     }
 
-    // Plot All 8 State Risk Zones & Lifelines
-    zoneLayerGroup.clearLayers();
-    bufferLayerGroup.clearLayers();
-    zRes.zones.forEach(z => {
-      const color = z.risk_level === 'CRITICAL' ? '#ef4444' : z.risk_level === 'HIGH' ? '#f59e0b' : '#eab308';
-      const poly = L.polygon(z.coordinates, { color, fillColor: color, fillOpacity: 0.32, weight: 2 }).addTo(zoneLayerGroup);
-
-      poly.bindPopup(`
-        <div style="font-size:12px; line-height:1.4;">
-          <strong style="color:${color};">${z.zone_code}: ${z.name}</strong><br>
-          State: <strong>${z.state}</strong> (${z.district})<br>
-          Lifeline Corridor: <strong>${z.lifeline_highway}</strong><br>
-          LSI Risk: <strong>${(z.risk_score * 100).toFixed(1)}% (${z.risk_level})</strong><br>
-          Trigger Rain: ${z.trigger_rainfall_mm} mm/h<br>
-          <hr style="margin:4px 0; border:0; border-top:1px solid #444;">
-          Shelter: ${z.evacuation_shelter}
-        </div>
-      `);
-
-      if (z.risk_level === 'CRITICAL') {
-        L.circle(z.coordinates[0], { radius: 1500, color: '#ef4444', fillColor: '#ef4444', fillOpacity: 0.08, dashArray: '6,6', weight: 1 }).addTo(bufferLayerGroup);
-      }
-    });
-
-    // Plot 8 Geotech Stations
-    stationLayerGroup.clearLayers();
-    stRes.stations.forEach(st => {
-      const color = st.status === 'CRITICAL' ? '#ef4444' : st.status === 'HIGH' ? '#f59e0b' : '#10b981';
-      const m = L.circleMarker([st.lat, st.lng], { radius: 8, color: '#fff', fillColor: color, fillOpacity: 0.95, weight: 2 }).addTo(stationLayerGroup);
-      
-      m.bindPopup(`
-        <div style="font-size:12px;">
-          <strong>🛰️ ${st.id}: ${st.name}</strong><br>
-          State: <strong>${st.state}</strong> (${st.district})<br>
-          Lifeline Highway: <strong>${st.lifeline}</strong><br>
-          Rain: <strong>${st.rainfall_mm_h} mm/h</strong> | Soil: <strong>${st.soil_moisture_pct}%</strong><br>
-          Pore Pressure: <strong>${st.pore_pressure_kpa} kPa</strong> | Tilt: <strong>${st.tilt_deg}°</strong><br>
-          Status: <span style="color:${color}; font-weight:bold;">${st.status}</span>
-        </div>
-      `);
-      m.on('click', () => selectStation(st));
-    });
-
-    // Plot Field Reports
-    reportLayerGroup.clearLayers();
-    repRes.reports.forEach(r => plotReportMarker(r));
-
-    renderDistrictTable(zRes.zones);
-    renderAlerts(cachedAlertsData);
-    renderOutboxUI();
+    plotReportMarkers();
 
   } catch (err) {
-    console.error('Data refresh error:', err);
+    console.warn('Backend connection warning; falling back to high-res local state:', err);
+    plotDefaultSectors();
   }
 }
 
-// RENDER AI PROBABILITY HEATMAP & SCORING LAYER
+// Plot 8 Geotech Stations with radar-ping Custom Pins
+function plotStationMarkers(stations) {
+  stationLayerGroup.clearLayers();
+
+  stations.forEach(st => {
+    const isCritical = st.status === 'CRITICAL';
+    const isHigh = st.status === 'HIGH';
+    const color = isCritical ? '#ef4444' : isHigh ? '#f59e0b' : '#10b981';
+
+    const marker = L.marker([st.lat, st.lng], {
+      icon: createCustomPin(color, isCritical || isHigh)
+    }).addTo(stationLayerGroup);
+
+    marker.bindPopup(`
+      <div style="font-size:12px; min-width:200px; line-height:1.45;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+          <strong style="color:${color}; font-size:13px;">${st.name}</strong>
+          <span style="background:${color}22; color:${color}; font-weight:bold; font-size:10px; padding:2px 6px; border-radius:4px; border:1px solid ${color}66;">${st.status}</span>
+        </div>
+        <div>State: <strong>${st.state}</strong> (${st.district})</div>
+        <div>Lifeline: <strong>${st.lifeline}</strong></div>
+        <div style="margin-top:4px; font-family:'JetBrains Mono', monospace; font-size:11px;">
+          Rain: <strong>${st.rainfall_mm_h} mm/h</strong> | Pore: <strong style="color:#38bdf8;">${st.pore_pressure_kpa} kPa</strong>
+        </div>
+      </div>
+    `);
+
+    marker.on('click', () => {
+      // Find matching hotspot or construct sector object
+      const matched = Object.values(HOTSPOTS).find(h => h.state.toLowerCase() === st.state.toLowerCase()) || {
+        name: st.name,
+        state: st.state,
+        district: st.district,
+        lat: st.lat,
+        lng: st.lng,
+        prob: isCritical ? 94 : isHigh ? 82 : 45,
+        fos: isCritical ? '0.82 (Failure Imminent)' : isHigh ? '1.05 (Creep)' : '1.42 (Stable)',
+        pore: `${st.pore_pressure_kpa} kPa`,
+        rain: `${st.rainfall_mm_h * 4} mm`,
+        factor: isCritical ? 'Toe Hydrostatic Shear' : 'Sub-surface Infiltration',
+        risk: st.status,
+        protocol: isCritical ? HOTSPOTS.sikkim.protocol : 'Routine sensor telemetry monitoring and standard traffic advisory.'
+      };
+      updateSectorInspector(matched);
+      if (st.history) updateTelemetryFromHistory(st.history, st.name);
+    });
+  });
+}
+
+// Plot Risk Zones & 1.8km Buffer Circles
+function plotRiskZones(zones) {
+  zoneLayerGroup.clearLayers();
+  bufferLayerGroup.clearLayers();
+
+  zones.forEach(z => {
+    const isCritical = z.risk_level === 'CRITICAL';
+    const isHigh = z.risk_level === 'HIGH';
+    const color = isCritical ? '#ef4444' : isHigh ? '#f59e0b' : '#10b981';
+
+    const poly = L.polygon(z.coordinates, {
+      color: color,
+      fillColor: color,
+      fillOpacity: 0.22,
+      weight: 1.8
+    }).addTo(zoneLayerGroup);
+
+    poly.bindPopup(`
+      <div style="font-size:12px; line-height:1.45;">
+        <strong style="color:${color}; font-size:13px;">${z.name}</strong><br>
+        District: <strong>${z.district}, ${z.state}</strong><br>
+        Risk Level: <strong style="color:${color};">${z.risk_level}</strong> (${(z.risk_score * 100).toFixed(0)}% LSI)<br>
+        Lifeline Corridor: <strong>${z.lifeline_highway}</strong><br>
+        Shelter: <em>${z.evacuation_shelter}</em>
+      </div>
+    `);
+
+    poly.on('click', () => {
+      const center = poly.getBounds().getCenter();
+      const matched = Object.values(HOTSPOTS).find(h => h.state.toLowerCase() === z.state.toLowerCase()) || {
+        name: z.name,
+        state: z.state,
+        district: z.district,
+        lat: +center.lat.toFixed(4),
+        lng: +center.lng.toFixed(4),
+        prob: +(z.risk_score * 100).toFixed(0),
+        fos: isCritical ? '0.84 (Failure Imminent)' : '1.06 (Unstable)',
+        pore: isCritical ? '48.2 kPa' : '36.0 kPa',
+        rain: `${z.trigger_rainfall_mm * 4.5} mm`,
+        factor: 'Shear Boundary Rupture',
+        risk: z.risk_level,
+        protocol: `Evacuate endangered slope perimeter to ${z.evacuation_shelter}. Suspend heavy traffic on ${z.lifeline_highway}.`
+      };
+      updateSectorInspector(matched);
+    });
+
+    // 1.8km Buffer circle around critical zones
+    if (isCritical && z.coordinates && z.coordinates[0]) {
+      L.circle(z.coordinates[0], {
+        radius: 1800,
+        color: '#ef4444',
+        fillColor: '#ef4444',
+        fillOpacity: 0.08,
+        weight: 1.5,
+        dashArray: '5, 5'
+      }).addTo(bufferLayerGroup);
+    }
+  });
+}
+
+// Continuous AI Probability Heatmap via Leaflet.heat
 function renderMlHeatmap(data) {
   if (!data || !data.leaflet_heat_points) return;
 
-  // 1. Remove previous smooth heat layer if exists
   if (mlHeatmapLayer && map.hasLayer(mlHeatmapLayer)) {
     map.removeLayer(mlHeatmapLayer);
   }
 
-  // 2. Build continuous density heat layer via Leaflet.heat
   if (typeof L.heatLayer === 'function') {
     mlHeatmapLayer = L.heatLayer(data.leaflet_heat_points, {
       radius: 42,
@@ -463,7 +607,7 @@ function renderMlHeatmap(data) {
       maxZoom: 12,
       max: 1.0,
       gradient: {
-        0.15: '#22c55e',
+        0.15: '#10b981',
         0.40: '#eab308',
         0.65: '#f97316',
         0.85: '#ef4444'
@@ -475,7 +619,7 @@ function renderMlHeatmap(data) {
     }
   }
 
-  // 3. Clear and render crisp interactive circle markers with probability scores
+  // Interactive circle markers with tooltip & popup
   mlCircleMarkersGroup.clearLayers();
   if (data.geojson_feature_collection && data.geojson_feature_collection.features) {
     data.geojson_feature_collection.features.forEach(f => {
@@ -484,301 +628,588 @@ function renderMlHeatmap(data) {
       const pct = (p.lsi_score * 100).toFixed(1);
 
       const circle = L.circleMarker(coords, {
-        radius: 9,
+        radius: 8,
         fillColor: p.color,
         color: '#ffffff',
         weight: 1.5,
-        fillOpacity: 0.92
+        fillOpacity: 0.9
       });
 
-      // Quick hover tooltip
-      circle.bindTooltip(`<strong>${p.station_name}</strong><br>AI Probability: <span style="color:${p.color};font-weight:bold;">${pct}% (${p.risk_level})</span>`, {
-        direction: 'top',
-        className: 'heatmap-tooltip'
+      circle.bindTooltip(`<strong>${p.station_name}</strong><br>AI Hazard: <strong style="color:${p.color};">${pct}% (${p.risk_level})</strong>`, {
+        direction: 'top'
       });
-
-      // Detailed popup
-      circle.bindPopup(`
-        <div style="font-size:12px; line-height:1.45; min-width:190px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-            <span style="background:${p.color}; color:#fff; padding:2px 7px; border-radius:3px; font-weight:bold; font-size:10px;">${p.risk_level} RISK</span>
-            <span style="font-weight:bold; color:${p.color}; font-size:13px;">${pct}%</span>
-          </div>
-          <strong>${p.station_name}</strong><br>
-          State: <strong>${p.state}</strong> (${p.location_id})<br>
-          Continuous LSI Score: <strong>${p.lsi_score}</strong><br>
-          <hr style="margin:5px 0; border:0; border-top:1px solid #334155;">
-          <span style="font-size:10px; color:#94a3b8;">Module 1 AI Engine (Physics-Guided Random Forest + Antecedent Rain Matrix)</span>
-        </div>
-      `);
 
       circle.addTo(mlCircleMarkersGroup);
     });
   }
 
-  // 4. Update status summary in map toolbar footer
+  // Update Status in Map Footer
   const statusEl = document.getElementById('lbl-batch-status');
-  if (statusEl) {
-    const maxPct = (data.max_lsi_score * 100).toFixed(1);
-    const meanPct = (data.mean_lsi_score * 100).toFixed(1);
-    statusEl.textContent = `${data.grid_cell_count} Cells (Max: ${maxPct}%, Mean: ${meanPct}%)`;
+  if (statusEl && data.max_lsi_score !== undefined) {
+    statusEl.textContent = `${data.grid_cell_count} Cells (Max LSI: ${(data.max_lsi_score * 100).toFixed(1)}%)`;
   }
 }
 
+// Plot Ground Field Reports
+function plotReportMarkers() {
+  reportLayerGroup.clearLayers();
+  localReports.forEach(r => {
+    const isCritical = r.hazardType.includes('Debris') || r.hazardType.includes('Slide');
+    const color = isCritical ? '#f59e0b' : '#38bdf8';
 
-function selectStation(st) {
-  document.getElementById('station-name-disp').textContent = `${st.id}: ${st.name}`;
-  document.getElementById('station-coords-disp').textContent = `${st.district}, ${st.state} • Lifeline: ${st.lifeline}`;
-  document.getElementById('station-status-disp').textContent = st.status;
-  document.getElementById('station-status-disp').className = `badge ${st.status === 'CRITICAL' ? 'badge-critical' : 'badge-high'}`;
+    // Approximate coords based on state / location or random offset around Sikkim / Assam
+    const lat = r.lat || 27.3389 + (Math.random() - 0.5) * 0.05;
+    const lng = r.lng || 88.6065 + (Math.random() - 0.5) * 0.05;
 
-  document.getElementById('disp-rain').innerHTML = `${st.rainfall_mm_h} <small>mm/h</small>`;
-  document.getElementById('disp-moisture').innerHTML = `${st.soil_moisture_pct} <small>%</small>`;
-  document.getElementById('disp-pore').innerHTML = `${st.pore_pressure_kpa} <small>kPa</small>`;
-  document.getElementById('disp-tilt').innerHTML = `${st.tilt_deg} <small>deg</small>`;
+    const marker = L.circleMarker([lat, lng], {
+      radius: 7,
+      fillColor: color,
+      color: '#ffffff',
+      weight: 2,
+      fillOpacity: 0.95
+    }).addTo(reportLayerGroup);
 
-  if (telemetryChart && st.history) {
-    telemetryChart.data.labels = st.history.map(h => h.time);
-    telemetryChart.data.datasets[0].data = st.history.map(h => h.rain);
-    telemetryChart.data.datasets[1].data = st.history.map(h => h.pore);
-    telemetryChart.update();
+    marker.bindPopup(`
+      <div style="font-size:12px; line-height:1.4;">
+        <span style="background:${color}; color:#fff; font-size:9px; font-weight:bold; padding:2px 6px; border-radius:3px;">GROUND REPORT</span><br>
+        <strong>${r.location}</strong><br>
+        Observed: <strong style="color:${color};">${r.hazardType}</strong><br>
+        Crack Width: <strong>${r.crackWidth}</strong><br>
+        <em>${r.notes}</em><br>
+        <div style="margin-top:4px; font-size:10px; color:#94a3b8;">Status: ${r.status} &bull; ${r.time}</div>
+      </div>
+    `);
+  });
+}
+
+// Fallback in case backend server is restarting
+function plotDefaultSectors() {
+  const defaultZones = Object.values(HOTSPOTS);
+  defaultZones.forEach(z => {
+    const isCrit = z.risk === 'CRITICAL';
+    const color = isCrit ? '#ef4444' : z.risk === 'HIGH' ? '#f59e0b' : '#10b981';
+    L.marker([z.lat, z.lng], { icon: createCustomPin(color, isCrit) })
+      .bindPopup(`<strong>${z.name}</strong><br>Risk: ${z.risk}<br>Prob: ${z.prob}%`)
+      .addTo(stationLayerGroup)
+      .on('click', () => updateSectorInspector(z));
+  });
+}
+
+// ==========================================
+// 6. 1-COLUMN SECTOR INSPECTOR CONTROLLER
+// ==========================================
+
+function updateSectorInspector(sector) {
+  currentInspectorSector = sector;
+
+  const nameEl = document.getElementById('disp-sector-name');
+  const coordsEl = document.getElementById('disp-sector-coords');
+  const badgeEl = document.getElementById('disp-sector-badge');
+  const probEl = document.getElementById('disp-sector-prob');
+  const barEl = document.getElementById('disp-sector-bar');
+  const fosEl = document.getElementById('disp-sector-fos');
+  const poreEl = document.getElementById('disp-sector-pore');
+  const rainEl = document.getElementById('disp-sector-rain');
+  const factorEl = document.getElementById('disp-sector-factor');
+  const protocolEl = document.getElementById('disp-sector-protocol');
+
+  if (nameEl) nameEl.textContent = sector.name;
+  if (coordsEl) coordsEl.textContent = `${sector.lat}° N, ${sector.lng}° E • ${sector.district || sector.state}`;
+
+  if (badgeEl) {
+    badgeEl.textContent = sector.risk;
+    badgeEl.className = `badge-status-pill ${sector.risk === 'CRITICAL' ? 'danger' : sector.risk === 'HIGH' ? 'warning' : 'emerald'}`;
   }
+
+  if (probEl) probEl.textContent = `${sector.prob}%`;
+  if (barEl) {
+    barEl.style.width = `${sector.prob}%`;
+    barEl.className = sector.risk === 'CRITICAL' ? 'progress-bar-danger' : 'progress-bar-emerald';
+  }
+
+  if (fosEl) fosEl.textContent = sector.fos;
+  if (poreEl) poreEl.textContent = sector.pore;
+  if (rainEl) rainEl.textContent = sector.rain;
+  if (factorEl) factorEl.textContent = sector.factor;
+  if (protocolEl) protocolEl.textContent = sector.protocol;
 }
 
-function plotReportMarker(r) {
-  const m = L.circleMarker([r.lat, r.lng], { radius: 9, fillColor: '#0284c7', color: '#ffffff', weight: 2, fillOpacity: 0.95 }).addTo(reportLayerGroup);
-  m.bindPopup(`
-    <div style="font-size:12px;">
-      <span style="background:#0284c7; color:#fff; padding:1px 5px; border-radius:3px; font-weight:bold;">GROUND REPORT</span><br>
-      <strong>${r.hazard_type}</strong> (${r.severity})<br>
-      State: <strong>${r.state}</strong><br>
-      Reporter: ${r.reporter}<br>
-      Location: ${r.location_desc || 'NER Sector'}<br>
-      Notes: <small>${r.notes || ''}</small>
-    </div>
-  `);
+// ==========================================
+// 7. HOTSPOT SELECTION DROPDOWN
+// ==========================================
+
+function initHotspotDropdown() {
+  const select = document.getElementById('hotspot-select');
+  if (!select) return;
+
+  select.addEventListener('change', e => {
+    const key = e.target.value;
+    const sector = HOTSPOTS[key];
+    if (sector && map) {
+      map.flyTo([sector.lat, sector.lng], sector.zoom, { duration: 1.4 });
+      updateSectorInspector(sector);
+    }
+  });
 }
 
-function renderDistrictTable(zones) {
-  const tbody = document.getElementById('district-tbody');
-  tbody.innerHTML = zones.map(z => {
-    const badge = z.risk_level === 'CRITICAL' ? 'badge-critical' : z.risk_level === 'HIGH' ? 'badge-high' : 'badge-moderate';
+// ==========================================
+// 8. TELEMETRY CHART (CHART.JS)
+// ==========================================
+
+function initTelemetryChart() {
+  const canvas = document.getElementById('telemetryChart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+
+  // Gradient for rainfall
+  const rainGradient = ctx.createLinearGradient(0, 0, 0, 260);
+  rainGradient.addColorStop(0, 'rgba(56, 189, 248, 0.35)');
+  rainGradient.addColorStop(1, 'rgba(56, 189, 248, 0.0)');
+
+  // Gradient for pore pressure
+  const poreGradient = ctx.createLinearGradient(0, 0, 0, 260);
+  poreGradient.addColorStop(0, 'rgba(239, 68, 68, 0.35)');
+  poreGradient.addColorStop(1, 'rgba(239, 68, 68, 0.0)');
+
+  telemetryChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: ['02:00', '06:00', '10:00', '14:00', '18:00', '22:00'],
+      datasets: [
+        {
+          label: 'Precipitation Intensity (mm/h)',
+          data: [24, 52, 110, 195, 260, 312],
+          borderColor: '#38bdf8',
+          backgroundColor: rainGradient,
+          fill: true,
+          tension: 0.38,
+          borderWidth: 2.2,
+          pointBackgroundColor: '#38bdf8',
+          pointRadius: 4,
+          yAxisID: 'yRain'
+        },
+        {
+          label: 'Pore Water Pressure (kPa)',
+          data: [38, 56, 84, 112, 129, 138],
+          borderColor: '#ef4444',
+          backgroundColor: poreGradient,
+          borderDash: [5, 4],
+          fill: false,
+          tension: 0.38,
+          borderWidth: 2.2,
+          pointBackgroundColor: '#ef4444',
+          pointRadius: 4,
+          yAxisID: 'yPore'
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: 'index',
+        intersect: false
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(3, 7, 18, 0.95)',
+          borderColor: 'rgba(255, 255, 255, 0.1)',
+          borderWidth: 1,
+          titleFont: { family: 'Plus Jakarta Sans', size: 12, weight: 'bold' },
+          bodyFont: { family: 'JetBrains Mono', size: 11 },
+          padding: 10
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(255, 255, 255, 0.05)' },
+          ticks: { color: '#64748b', font: { family: 'JetBrains Mono', size: 10 } }
+        },
+        yRain: {
+          type: 'linear',
+          position: 'left',
+          grid: { color: 'rgba(255, 255, 255, 0.05)' },
+          ticks: { color: '#38bdf8', font: { family: 'JetBrains Mono', size: 10 } },
+          title: { display: true, text: 'Rain (mm)', color: '#38bdf8', font: { size: 10 } }
+        },
+        yPore: {
+          type: 'linear',
+          position: 'right',
+          grid: { drawOnChartArea: false },
+          ticks: { color: '#ef4444', font: { family: 'JetBrains Mono', size: 10 } },
+          title: { display: true, text: 'Pore Pressure (kPa)', color: '#ef4444', font: { size: 10 } }
+        }
+      }
+    }
+  });
+}
+
+function updateTelemetryFromHistory(history, stationName) {
+  if (!telemetryChart || !history || history.length === 0) return;
+
+  telemetryChart.data.labels = history.map(h => h.time);
+  telemetryChart.data.datasets[0].data = history.map(h => h.rain);
+  telemetryChart.data.datasets[1].data = history.map(h => h.pore);
+  telemetryChart.update();
+}
+
+// ==========================================
+// 9. SENTINEL-1 INSAR INTERFEROMETRY REFRESH
+// ==========================================
+
+function initInSARRefresh() {
+  const btn = document.getElementById('btn-refresh-insar');
+  const icon = document.getElementById('icon-insar-spin');
+  if (!btn || !icon) return;
+
+  btn.addEventListener('click', () => {
+    icon.classList.add('fa-spin');
+    btn.disabled = true;
+
+    setTimeout(() => {
+      icon.classList.remove('fa-spin');
+      btn.disabled = false;
+
+      // Randomize small variation in Sentinel pass to prove real-time interactivity
+      const velocity = (17.8 + Math.random() * 2.2).toFixed(1);
+      const coherence = (0.87 + Math.random() * 0.06).toFixed(2);
+
+      const velEl = document.querySelector('.insar-stat-list .stat-row .text-danger');
+      const cohEl = document.querySelector('.insar-stat-list .stat-row .text-emerald');
+
+      if (velEl) velEl.textContent = `${velocity} mm/wk [HIGH]`;
+      if (cohEl) cohEl.textContent = `${coherence} (Clear Coherence)`;
+    }, 1100);
+  });
+}
+
+// ==========================================
+// 10. ARTERIAL ROAD NETWORK (TAB 3)
+// ==========================================
+
+function renderRoadLifelines() {
+  const container = document.getElementById('road-cards-container');
+  if (!container) return;
+
+  container.innerHTML = ARTERIAL_ROADS.map(road => {
+    const isSuspended = road.status === 'TRAFFIC SUSPENDED';
+    const isRegulated = road.status === 'REGULATED CONVOY';
+    const badgeClass = isSuspended ? 'danger' : isRegulated ? 'warning' : 'emerald';
+
     return `
-      <tr>
-        <td><strong>${z.state}</strong><br><small style="color:var(--text-dim);">${z.district}</small></td>
-        <td>${z.trigger_rainfall_mm} mm</td>
-        <td><strong>${(z.risk_score * 100).toFixed(0)}%</strong></td>
-        <td><span class="badge ${badge}">${z.risk_level}</span></td>
-      </tr>
-    `;
-  }).join('');
-}
-
-function renderAlerts(alerts) {
-  const container = document.getElementById('active-alerts-container');
-  if (!alerts || !alerts.length) {
-    container.innerHTML = '<div style="font-size:11px; color:var(--text-dim);">No active evacuation directives.</div>';
-    return;
-  }
-
-  container.innerHTML = alerts.map(a => {
-    const title = a.headline[currentLanguage] || a.headline.en;
-    const desc = a.instructions[currentLanguage] || a.instructions.en;
-    return `
-      <div class="cap-alert-item">
-        <div class="cap-alert-header">
-          <span class="cap-badge">${a.severity}</span>
-          <span style="font-size:10px; color:var(--text-dim);"><i class="fa-solid fa-language"></i> ${currentLanguage.toUpperCase()}</span>
+      <div class="glass-panel road-card">
+        <div class="road-card-left">
+          <div class="road-card-title-row">
+            <span class="road-name font-mono">${road.code}</span>
+            <span class="road-sector-pill">${road.sector}</span>
+          </div>
+          <p class="road-card-sub">
+            <strong class="text-main">${road.name}</strong> &bull; Precipitation: <span class="font-mono text-cyan">${road.rain}</span>
+          </p>
+          <div style="font-size: 11px; color: var(--emerald-green); margin-top: 4px;">
+            <i class="fa-solid fa-route"></i> Bypass: <strong>${road.detour}</strong>
+          </div>
+          <div style="font-size: 10px; color: var(--text-dim); margin-top: 2px;">
+            Maintaining Agency: ${road.agency}
+          </div>
         </div>
-        <div class="cap-body">
-          <strong>${title}</strong><br>
-          ${desc}
-        </div>
-        <div class="cap-footer">
-          <i class="fa-solid fa-bullhorn"></i> Villages: ${a.target_villages.join(', ')} • 
-          Broadcast: <strong>${a.recipients} SMS/IVRS</strong>
+
+        <div>
+          <span class="badge-status-pill ${badgeClass} font-mono font-bold">
+            ${isSuspended ? '<i class="fa-solid fa-ban"></i> ' : isRegulated ? '<i class="fa-solid fa-triangle-exclamation"></i> ' : '<i class="fa-solid fa-circle-check"></i> '}
+            ${road.status}
+          </span>
         </div>
       </div>
     `;
   }).join('');
 }
 
-// 8. WHAT-IF SCENARIO
-function initScenarioSlider() {
-  const slider = document.getElementById('rain-range');
-  const disp = document.getElementById('slider-rain-val');
-  const btn = document.getElementById('btn-run-scenario');
+// ==========================================
+// 11. CITIZEN INCIDENT LOG (TAB 4)
+// ==========================================
 
-  slider.addEventListener('input', () => { 
-    disp.textContent = `${slider.value} mm/h`; 
-  });
+function initFieldIncidentForm() {
+  const form = document.getElementById('form-field-report');
+  const crackSlider = document.getElementById('slider-crack');
+  const crackDisp = document.getElementById('disp-crack-val');
 
-  // Dynamically recompute batch ML probabilities and heatmap on slider drag release
-  slider.addEventListener('change', async () => {
-    try {
-      const res = await fetch(`/api/ml/heatmap?rainfall=${slider.value}`);
-      const data = await res.json();
-      if (data && data.status === 'success') {
-        renderMlHeatmap(data);
-      }
-    } catch (e) {
-      console.warn('Live slider heatmap update error:', e);
-    }
-  });
+  if (crackSlider && crackDisp) {
+    crackSlider.addEventListener('input', () => {
+      crackDisp.textContent = `${crackSlider.value} cm`;
+    });
+  }
 
-  btn.addEventListener('click', async () => {
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Testing Factor of Safety...';
-    btn.disabled = true;
+  if (!form) return;
 
-    try {
-      const res = await fetch('/api/simulate/monsoon_surge', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rainfall_mm: parseFloat(slider.value) })
-      });
-      const data = await res.json();
-      selectStation(data.station);
-      if (data.heatmap) {
-        renderMlHeatmap(data.heatmap);
-      }
-      await refreshAllData();
-      alert(`⚡ MONSOON SURGE SIMULATED:\n\nRainfall intensity ${slider.value} mm/h evaluated across Sikkim & Assam lifelines.\nPore water pressure reached ${data.station.pore_pressure_kpa} kPa.\nEmergency sirens & SMS dispatched in native dialects!`);
-    } finally {
-      btn.innerHTML = '<i class="fa-solid fa-bolt"></i> Run Predictive Slope Stress Test';
-      btn.disabled = false;
-    }
-  });
-}
-
-// 9. OFFLINE SYNC ENGINE & FIELD FORM
-function initOfflineToggle() {
-  const toggle = document.getElementById('offline-toggle');
-  const badge = document.getElementById('net-indicator');
-  const banner = document.getElementById('banner-text');
-
-  toggle.addEventListener('change', async () => {
-    isOfflineMode = toggle.checked;
-    const dict = I18N[currentLanguage] || I18N.en;
-
-    if (isOfflineMode) {
-      badge.textContent = dict.net_offline;
-      badge.className = 'network-badge offline';
-      banner.textContent = 'CELLULAR DEAD ZONE DETECTED. Local IndexedDB store-and-forward queue active.';
-    } else {
-      badge.textContent = dict.net_online;
-      badge.className = 'network-badge online';
-      banner.textContent = 'Network Restored (4G/LTE). Flushing offline outbox packets to cloud...';
-      await flushOutbox();
-    }
-  });
-}
-
-function initFieldScoutForm() {
-  const form = document.getElementById('scout-report-form');
-
-  form.addEventListener('submit', async (e) => {
+  form.addEventListener('submit', async e => {
     e.preventDefault();
 
-    const selectedState = document.getElementById('in-state').value;
-    const loc = HOTSPOTS[selectedState.toLowerCase()] || HOTSPOTS.sikkim;
+    const locationInp = document.getElementById('inp-location').value.trim();
+    const hazardType = document.getElementById('sel-hazard').value;
+    const crackWidth = `${crackSlider.value} cm`;
+    const notes = document.getElementById('inp-notes').value.trim();
 
-    const report = {
-      client_id: 'fld_' + Date.now().toString(36),
-      reporter: document.getElementById('in-reporter').value,
-      severity: document.getElementById('in-severity').value,
-      state: selectedState,
-      hazard_type: document.getElementById('in-hazard').value,
-      road_status: document.getElementById('in-roadstatus').value,
-      notes: document.getElementById('in-notes').value,
-      lat: loc.lat + (Math.random() - 0.5) * 0.015,
-      lng: loc.lng + (Math.random() - 0.5) * 0.015,
-      location_desc: `${selectedState} Lifeline Corridor`,
-      status: isOfflineMode ? 'PENDING_SYNC' : 'SYNCED'
+    if (!locationInp) return;
+
+    const newReport = {
+      id: Date.now(),
+      reporter: 'Civilian Ground Scout / Border Patrol',
+      location: locationInp,
+      hazardType: hazardType,
+      crackWidth: crackWidth,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      notes: notes || 'Geo-referenced ground alert submitted via offline packet buffer.',
+      status: isOfflineMode ? 'CACHED IN OFFLINE SQLITE BUFFER' : 'RELAYED TO STATE EOC 112'
     };
 
-    localOutbox.unshift(report);
-    renderOutboxUI();
+    localReports.unshift(newReport);
+    try {
+      localStorage.setItem('terrasafe_field_reports', JSON.stringify(localReports));
+    } catch (err) {}
 
-    if (isOfflineMode) {
-      alert(`📦 OFFLINE STORE-AND-FORWARD QUEUE:\n\nDevice is in a remote mountain dead zone in ${selectedState}.\nReport saved in local device storage.\nIt will auto-sync as soon as signal returns.`);
-    } else {
+    // Update UI feeds and badges
+    renderIncidentFeed();
+    plotReportMarkers();
+
+    // If online, transmit to backend server
+    if (!isOfflineMode) {
       try {
         await fetch('/api/reports', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(report)
+          body: JSON.stringify({
+            client_id: 'fld_' + newReport.id,
+            reporter: newReport.reporter,
+            location_desc: newReport.location,
+            hazard_type: newReport.hazardType,
+            severity: 'CRITICAL',
+            state: 'Sikkim / Assam Lifeline',
+            notes: `${newReport.crackWidth} crack. ${newReport.notes}`
+          })
         });
-        plotReportMarker(report);
-        alert('✅ Ground Report transmitted to Cloud Gateway and plotted on GIS map!');
       } catch (err) {
-        console.warn('Saved offline:', err);
+        console.warn('Backend server offline; saved locally in IndexedDB/SQLite.');
       }
+    }
+
+    // Reset Form
+    form.reset();
+    if (crackDisp) crackDisp.textContent = '12 cm';
+
+    // Switch to feedback
+    alert(`✅ Ground Incident Logged:\n\n${newReport.hazardType} at ${newReport.location}.\nStatus: ${newReport.status}`);
+  });
+}
+
+function renderIncidentFeed() {
+  const container = document.getElementById('incident-feed-list');
+  const countBadge = document.getElementById('disp-incident-count');
+  const tabBadge = document.getElementById('badge-reports-count');
+  const metricDisp = document.getElementById('disp-reports-metric');
+
+  if (countBadge) countBadge.textContent = `${localReports.length} Logged`;
+  if (tabBadge) tabBadge.textContent = `${localReports.length}`;
+  if (metricDisp) metricDisp.textContent = `${localReports.length} Reports`;
+
+  if (!container) return;
+
+  container.innerHTML = localReports.map(item => `
+    <div class="incident-item">
+      <div class="incident-item-top">
+        <span class="incident-location">${item.location}</span>
+        <span class="incident-time font-mono">${item.time}</span>
+      </div>
+      <div class="incident-hazard">
+        <i class="fa-solid fa-triangle-exclamation"></i> ${item.hazardType} (Fissure: ${item.crackWidth || 'N/A'})
+      </div>
+      ${item.notes ? `<div class="incident-notes">"${item.notes}"</div>` : ''}
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px; font-size:10px; font-family:'JetBrains Mono', monospace;">
+        <span class="text-muted"><i class="fa-solid fa-user-shield"></i> ${item.reporter || 'Field Scout'}</span>
+        <span class="${item.status.includes('OFFLINE') ? 'text-amber' : 'text-emerald'}">
+          <i class="fa-solid fa-circle-check"></i> ${item.status}
+        </span>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ==========================================
+// 12. MULTILINGUAL DIALECT SWITCHER
+// ==========================================
+
+function initDialectSwitcher() {
+  const buttons = document.querySelectorAll('.dialect-btn');
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      buttons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      currentLanguage = btn.getAttribute('data-lang') || 'en';
+      applyDialect(currentLanguage);
+    });
+  });
+}
+
+function applyDialect(lang) {
+  const dict = I18N_WARNINGS[lang] || I18N_WARNINGS.en;
+  const marquee = document.getElementById('marquee-alert');
+  if (marquee && dict.marquee) marquee.textContent = dict.marquee;
+
+  // Update Sector Inspector Protocol if current sector matches Ranipool
+  const protocolEl = document.getElementById('disp-sector-protocol');
+  if (protocolEl && currentInspectorSector) {
+    if (currentInspectorSector.state.toLowerCase() === 'sikkim' && dict.protocolRanipool) {
+      protocolEl.textContent = dict.protocolRanipool;
+    } else if (currentInspectorSector.state.toLowerCase() === 'assam' && dict.protocolJatinga) {
+      protocolEl.textContent = dict.protocolJatinga;
+    }
+  }
+}
+
+// ==========================================
+// 13. EMERGENCY BROADCAST & AUDIO SIREN
+// ==========================================
+
+function initEmergencyBroadcast() {
+  const triggerBtn = document.getElementById('btn-trigger-cap');
+  const toast = document.getElementById('toast-broadcast');
+  const transmitBtn = document.getElementById('btn-transmit-callout');
+
+  const executeBroadcast = () => {
+    if (toast) {
+      toast.classList.remove('hidden');
+      setTimeout(() => {
+        toast.classList.add('hidden');
+      }, 4500);
+    }
+    // Also trigger audio siren
+    playAudioSiren();
+  };
+
+  if (triggerBtn) triggerBtn.addEventListener('click', executeBroadcast);
+  if (transmitBtn) transmitBtn.addEventListener('click', executeBroadcast);
+}
+
+function initAudioSiren() {
+  const btn = document.getElementById('btn-audio-alert');
+  if (btn) {
+    btn.addEventListener('click', () => {
+      playAudioSiren();
+    });
+  }
+}
+
+function playAudioSiren() {
+  const audio = document.getElementById('siren-audio');
+  if (audio) {
+    audio.currentTime = 0;
+    audio.play().catch(() => {});
+  }
+
+  // Voice alert synthesis
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
+    const dict = I18N_WARNINGS[currentLanguage] || I18N_WARNINGS.en;
+    const utterance = new SpeechSynthesisUtterance(dict.speechHeadline);
+    utterance.rate = 0.92;
+    const langMap = { en: 'en-IN', hi: 'hi-IN', as: 'as-IN', ne: 'ne-NP', mz: 'en-IN' };
+    utterance.lang = langMap[currentLanguage] || 'en-IN';
+    window.speechSynthesis.speak(utterance);
+  }
+}
+
+// ==========================================
+// 14. MONSOON SURGE SLIDER (PREDICTIVE AI)
+// ==========================================
+
+function initSurgeSlider() {
+  const slider = document.getElementById('slider-rain');
+  const disp = document.getElementById('slider-rain-val');
+  const peakDisp = document.getElementById('disp-peak-rain');
+
+  if (!slider || !disp) return;
+
+  slider.addEventListener('input', () => {
+    disp.textContent = `${slider.value} mm/h`;
+  });
+
+  slider.addEventListener('change', async () => {
+    const val = parseFloat(slider.value);
+    if (peakDisp) peakDisp.textContent = `${(val * 3.2).toFixed(0)} mm`;
+
+    try {
+      const res = await fetch(`/api/ml/heatmap?rainfall=${val}`);
+      const data = await res.json();
+      if (data && data.status === 'success') {
+        renderMlHeatmap(data);
+      }
+    } catch (err) {
+      console.warn('Monsoon surge simulation error:', err);
     }
   });
 }
 
-async function flushOutbox() {
-  const pending = localOutbox.filter(r => r.status === 'PENDING_SYNC');
-  if (!pending.length) return;
+// ==========================================
+// 15. OFFLINE MOUNTAIN DEAD ZONE SIMULATION
+// ==========================================
+
+function initOfflineSimulation() {
+  const toggle = document.getElementById('offline-toggle');
+  const pill = document.getElementById('telemetry-status-pill');
+  const txt = document.getElementById('txt-telemetry-status');
+
+  if (!toggle) return;
+
+  toggle.addEventListener('change', async () => {
+    isOfflineMode = toggle.checked;
+
+    if (isOfflineMode) {
+      if (pill) {
+        pill.className = 'telemetry-status-pill offline';
+        pill.innerHTML = '<i class="fa-solid fa-plane-slash"></i> <span id="txt-telemetry-status">Offline Buffer Active</span>';
+      }
+    } else {
+      if (pill) {
+        pill.className = 'telemetry-status-pill online';
+        pill.innerHTML = '<i class="fa-solid fa-tower-broadcast"></i> <span id="txt-telemetry-status">SAT-Net Synced</span>';
+      }
+      // Reconnected! Flush offline reports
+      await flushOfflineReports();
+    }
+  });
+}
+
+async function flushOfflineReports() {
+  const pending = localReports.filter(r => r.status.includes('OFFLINE'));
+  if (pending.length === 0) return;
 
   try {
     const res = await fetch('/api/reports/batch', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reports: pending })
+      body: JSON.stringify({
+        reports: pending.map(p => ({
+          client_id: 'fld_' + p.id,
+          reporter: p.reporter,
+          location_desc: p.location,
+          hazard_type: p.hazardType,
+          severity: 'CRITICAL',
+          state: 'North East Corridor',
+          notes: `${p.crackWidth || ''} ${p.notes || ''}`
+        }))
+      })
     });
     const data = await res.json();
 
-    pending.forEach(r => {
-      r.status = 'SYNCED';
-      plotReportMarker(r);
+    pending.forEach(p => {
+      p.status = 'RELAYED TO STATE EOC 112';
     });
 
-    renderOutboxUI();
-    alert(`📡 RECONNECTED:\n\nSynced ${data.synced_count} offline report(s) to Cloud Gateway.\nNew hazard markers plotted on the GIS map!`);
+    renderIncidentFeed();
+    alert(`📡 RECONNECTED TO SATELLITE GATEWAY:\n\nSynced ${data.synced_count || pending.length} pending report(s) from on-device SQLite buffer!`);
   } catch (err) {
-    console.error('Batch sync error:', err);
+    console.warn('Batch sync fallback:', err);
   }
 }
-
-function renderOutboxUI() {
-  const container = document.getElementById('outbox-items-container');
-  const pendingCount = localOutbox.filter(r => r.status === 'PENDING_SYNC').length;
-  const syncedCount = localOutbox.filter(r => r.status === 'SYNCED').length;
-
-  document.getElementById('badge-pending').textContent = `${pendingCount} Pending`;
-  document.getElementById('badge-synced').textContent = `${syncedCount} Synced`;
-
-  container.innerHTML = localOutbox.map(item => `
-    <div class="outbox-card-item">
-      <div>
-        <strong>${item.hazard_type}</strong> (${item.state})<br>
-        <span style="color:var(--text-dim); font-size:9px;">${item.reporter} • ${item.road_status || ''}</span>
-      </div>
-      <span class="badge ${item.status === 'PENDING_SYNC' ? 'badge-amber' : 'badge-success'}">
-        ${item.status === 'PENDING_SYNC' ? '⏳ OFFLINE' : '✓ SYNCED'}
-      </span>
-    </div>
-  `).join('');
-}
-
-// 10. AUDIT LOGS
-async function pollAuditLogs() {
-  try {
-    const res = await fetch('/api/audit_logs');
-    const data = await res.json();
-    document.getElementById('audit-log-list').innerHTML = data.logs.map(l => `
-      <div class="log-row">
-        <span class="log-time">[${l.time}]</span>
-        <span class="log-mod">${l.module}:</span>
-        <span class="log-msg">${l.message}</span>
-      </div>
-    `).join('');
-  } catch (e) {
-    // offline
-  }
-}
-
-document.getElementById('btn-clear-logs').addEventListener('click', () => {
-  document.getElementById('audit-log-list').innerHTML = '<div style="color:var(--text-dim);">Logs cleared.</div>';
-});

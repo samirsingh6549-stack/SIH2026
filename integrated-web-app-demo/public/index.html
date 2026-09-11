@@ -3,369 +3,535 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NER-LEWS: Unified Landslide Early Warning System (All 8 North Eastern States)</title>
+  <title>TerraSafe AI NER: Unified Landslide Early Warning Network (8 North Eastern States)</title>
   
-  <!-- Leaflet GIS -->
+  <!-- Plus Jakarta Sans & JetBrains Mono Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Leaflet GIS & Plugins -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <!-- Font Awesome Icons -->
+  <!-- Font Awesome 6 Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-  <!-- Custom Stylesheet -->
+  <!-- Chart.js for Telemetry Trends -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Leaflet Heat for AI Probability Heatmap -->
+  <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+  <!-- Main Platform Stylesheet -->
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
 
-  <!-- TOP COMMAND BAR -->
-  <header class="command-header">
-    <div class="header-left">
-      <div class="logo-shield">
-        <i class="fa-solid fa-mountain-sun"></i>
-      </div>
+  <!-- ROOT LAYOUT -->
+  <div class="app-layout">
+    
+    <!-- SIDEBAR NAVIGATION -->
+    <aside class="sidebar">
       <div>
-        <div class="title-row">
-          <h1 id="lbl-app-title">NER-LEWS</h1>
-          <span class="system-status-pill"><i class="fa-solid fa-circle text-success pulse"></i> 8 STATES ACTIVE</span>
-          <span class="version-tag">SIH 2026</span>
+        <!-- Brand Header -->
+        <div class="brand-box">
+          <div class="brand-icon">
+            <i class="fa-solid fa-shield-halved"></i>
+          </div>
+          <div class="brand-text">
+            <div class="brand-title-row">
+              <span class="brand-title">TerraSafe</span>
+              <span class="badge-tag">AI NER</span>
+            </div>
+            <span class="brand-sub">Early Warning Network</span>
+          </div>
         </div>
-        <p class="subtitle" id="lbl-app-sub">AI Landslide Monitoring & Offline Sync Backbone for the Eight Sisters of North East India</p>
-      </div>
-    </div>
 
-    <!-- SECTOR FOCUS ACROSS ALL 8 STATES -->
-    <div class="header-center">
-      <div class="hotspot-jump-box">
-        <label><i class="fa-solid fa-crosshairs"></i> <span id="lbl-sector-focus">State / Sector:</span></label>
-        <select id="hotspot-select">
-          <option value="sikkim">1. Sikkim: NH-10 Ranipool (CRITICAL)</option>
-          <option value="assam">2. Assam: Dima Hasao Jatinga (CRITICAL)</option>
-          <option value="manipur">3. Manipur: Noney Tupul Railway (CRITICAL)</option>
-          <option value="meghalaya">4. Meghalaya: East Khasi Hills Sohra (HIGH)</option>
-          <option value="nagaland">5. Nagaland: Kohima South Bypass (HIGH)</option>
-          <option value="arunachal">6. Arunachal Pradesh: Tawang Pass (HIGH)</option>
-          <option value="mizoram">7. Mizoram: Aizawl Chite Veng (MODERATE)</option>
-          <option value="tripura">8. Tripura: Jampui Hills Ridge (MODERATE)</option>
-        </select>
-      </div>
-
-      <!-- NATIVE LANGUAGE SELECTOR -->
-      <div class="lang-select-box">
-        <label><i class="fa-solid fa-language"></i> Language:</label>
-        <select id="lang-select">
-          <option value="en" selected>English</option>
-          <option value="hi">हिन्दी (Hindi)</option>
-          <option value="as">অসমীয়া (Assamese)</option>
-          <option value="ne">नेपाली (Nepali)</option>
-          <option value="bn">বাংলা (Bengali)</option>
-          <option value="mz">Mizo ṭawng (Mizo)</option>
-        </select>
-      </div>
-    </div>
-
-    <!-- OFFLINE DEAD ZONE SWITCH & CLOCK -->
-    <div class="header-right">
-      <div class="offline-sim-card">
-        <div class="sim-label-row">
-          <i class="fa-solid fa-tower-cell"></i>
-          <span id="lbl-dead-zone-sim">Mountain Dead Zone:</span>
+        <!-- Mission Control Label -->
+        <div class="nav-section-label">
+          <span>Mission Control</span>
+          <span class="live-dot"></span>
         </div>
-        <label class="toggle-switch">
-          <input type="checkbox" id="offline-toggle">
-          <span class="toggle-slider"></span>
-        </label>
-        <span class="network-badge online" id="net-indicator">ONLINE (4G/LTE)</span>
+
+        <!-- Navigation Tabs -->
+        <nav class="nav-list">
+          <button class="nav-item active" data-tab="command">
+            <div class="nav-item-left">
+              <i class="fa-solid fa-layer-group"></i>
+              <span>GIS Live Command</span>
+            </div>
+            <span class="nav-badge">Live Radar</span>
+          </button>
+          
+          <button class="nav-item" data-tab="analytics">
+            <div class="nav-item-left">
+              <i class="fa-solid fa-chart-line"></i>
+              <span>Sensor Telemetry</span>
+            </div>
+            <span class="nav-badge">Piezometer</span>
+          </button>
+
+          <button class="nav-item" data-tab="roads">
+            <div class="nav-item-left">
+              <i class="fa-solid fa-truck-moving"></i>
+              <span>Arterial Lifelines</span>
+            </div>
+            <span class="nav-badge warning" id="badge-blocked-roads">2 Blocked</span>
+          </button>
+
+          <button class="nav-item" data-tab="crowd">
+            <div class="nav-item-left">
+              <i class="fa-solid fa-camera"></i>
+              <span>Citizen Incident Log</span>
+            </div>
+            <span class="nav-badge" id="badge-reports-count">1</span>
+          </button>
+        </nav>
       </div>
 
-      <div class="time-box">
-        <div class="time-clock" id="ist-clock">--:--:-- IST</div>
-        <div class="time-date" id="ist-date">DD MMM YYYY</div>
+      <!-- System Diagnostics & Dialect Switcher -->
+      <div class="sidebar-footer">
+        <div class="glass-subpanel">
+          <div class="footer-row">
+            <span class="footer-label"><i class="fa-solid fa-language text-cyan"></i> Dialect</span>
+            <div class="dialect-buttons">
+              <button class="dialect-btn active" data-lang="en">EN</button>
+              <button class="dialect-btn" data-lang="hi">HI</button>
+              <button class="dialect-btn" data-lang="as">AS</button>
+              <button class="dialect-btn" data-lang="ne">NE</button>
+              <button class="dialect-btn" data-lang="mz">MZ</button>
+            </div>
+          </div>
+
+          <div class="footer-row">
+            <span class="footer-label">Uplink Telemetry</span>
+            <div id="telemetry-status-pill" class="telemetry-status-pill online">
+              <i class="fa-solid fa-tower-broadcast"></i>
+              <span id="txt-telemetry-status">SAT-Net Synced</span>
+            </div>
+          </div>
+
+          <!-- Mountain Dead Zone Toggle -->
+          <div class="footer-row pt-1">
+            <span class="footer-label">Dead Zone Sim</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="offline-toggle">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
       </div>
-    </div>
-  </header>
+    </aside>
 
-  <!-- WORKSPACE 3-COLUMN LAYOUT -->
-  <main class="dashboard-grid">
-
-    <!-- COLUMN 1: 8-STATE VULNERABILITY MATRIX & SCENARIO SIMULATOR -->
-    <section class="panel-column left-panel">
+    <!-- MAIN VIEWPORT -->
+    <main class="main-viewport">
       
-      <!-- ALL 8 STATES MATRIX TABLE -->
-      <div class="card district-card">
-        <div class="card-head">
-          <h3><i class="fa-solid fa-map-location-dot"></i> <span id="lbl-vulnerability-matrix">8-State Vulnerability Matrix</span></h3>
-          <span class="pill pill-danger">3 Critical</span>
+      <!-- TOP STATUS HEADER -->
+      <header class="top-header">
+        <div class="header-status-left">
+          <span class="beacon-pulse"></span>
+          <div class="header-warning-text">
+            <span class="text-muted">Active Warning: </span>
+            <strong class="text-danger" id="marquee-alert">Extreme Slope Saturation: NH-10 Ranipool & Cherrapunji Crest</strong>
+          </div>
         </div>
-        <div class="district-table-wrap">
-          <table class="district-table">
-            <thead>
-              <tr>
-                <th>State & Corridor</th>
-                <th>Trigger Rain</th>
-                <th>LSI Score</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody id="district-tbody">
-              <!-- Dynamically populated -->
-            </tbody>
-          </table>
+
+        <div class="header-actions-right">
+          <!-- Monsoon Surge Slider Tool -->
+          <div class="surge-slider-box">
+            <i class="fa-solid fa-cloud-showers-heavy text-cyan"></i>
+            <span class="surge-label">Rain Surge:</span>
+            <input type="range" id="slider-rain" min="20" max="220" value="75" step="5">
+            <span class="surge-val font-mono" id="slider-rain-val">75 mm/h</span>
+          </div>
+
+          <!-- Audio Alarm Button -->
+          <button id="btn-audio-alert" class="btn-secondary">
+            <i class="fa-solid fa-volume-high"></i> Audio Siren
+          </button>
+
+          <!-- Trigger Emergency Broadcast CTA -->
+          <button id="btn-trigger-cap" class="btn-primary-gradient">
+            <i class="fa-solid fa-bullhorn"></i> Trigger Broadcast (CAP/SMS)
+          </button>
         </div>
+      </header>
+
+      <!-- BROADCAST TOAST NOTIFICATION -->
+      <div id="toast-broadcast" class="toast-broadcast hidden">
+        <i class="fa-solid fa-circle-check"></i>
+        <span>Relayed OASIS CAP v1.2 Warning & 110dB Siren to 68,000 NER Residents across 8 Dialects!</span>
       </div>
 
-      <!-- WHAT-IF CLOUDBURST SIMULATOR -->
-      <div class="card scenario-card">
-        <div class="card-head">
-          <h3><i class="fa-solid fa-sliders"></i> <span id="lbl-what-if-sim">Cloudburst Simulator</span></h3>
-          <span class="pill pill-blue">AI Engine</span>
-        </div>
-        <p class="panel-hint">Simulate intense cloudbursts along vital lifeline highway corridors (NH-10, NH-27, NH-29):</p>
+      <!-- TAB CONTENTS WORKSPACE -->
+      <div class="workspace-content">
         
-        <div class="slider-control">
-          <div class="slider-meta">
-            <span>Simulated Precipitation:</span>
-            <strong id="slider-rain-val">75 mm/h</strong>
-          </div>
-          <input type="range" id="rain-range" min="10" max="150" value="75" step="5">
-          <div class="range-labels">
-            <span>10 mm (Light)</span>
-            <span>60 mm (Severe)</span>
-            <span>150 mm (Cloudburst)</span>
-          </div>
-        </div>
-
-        <button class="btn btn-warning btn-block" id="btn-run-scenario">
-          <i class="fa-solid fa-bolt"></i> Run Predictive Slope Stress Test
-        </button>
-      </div>
-
-      <!-- CAP EMERGENCY DIRECTIVES WITH AUDIO TTS -->
-      <div class="card alerts-card">
-        <div class="card-head">
-          <h3><i class="fa-solid fa-triangle-exclamation text-danger"></i> <span id="lbl-cap-orders">CAP Evacuation Orders</span></h3>
-          <button class="btn btn-outline-sm" id="btn-voice-alert"><i class="fa-solid fa-volume-high"></i> <span id="lbl-voice-btn">Audio Alert</span></button>
-        </div>
-        <div id="active-alerts-container" class="alerts-scroll-box">
-          <!-- Populated from server -->
-        </div>
-      </div>
-
-    </section>
-
-    <!-- COLUMN 2: FULL GIS SPATIAL VISUALIZER -->
-    <section class="panel-column center-panel">
-      <div class="card map-wrapper-card">
-        <div class="map-toolbar">
-          <div class="map-tools-left">
-            <span class="tool-title"><i class="fa-solid fa-layer-group"></i> GIS Geospatial Map</span>
-            <div class="layer-toggles">
-              <label class="layer-chk" style="color:#ef4444; font-weight:bold;"><input type="checkbox" id="chk-ml-heatmap" checked> <i class="fa-solid fa-fire"></i> AI LSI Heatmap</label>
-              <label class="layer-chk"><input type="checkbox" id="chk-zones" checked> Risk Polygons</label>
-              <label class="layer-chk"><input type="checkbox" id="chk-stations" checked> 8-State Geotech</label>
-              <label class="layer-chk"><input type="checkbox" id="chk-reports" checked> Field Pins</label>
-              <label class="layer-chk"><input type="checkbox" id="chk-buffers"> Evac Rings</label>
-            </div>
-          </div>
-          <div class="map-tools-right">
-            <button class="btn btn-outline-sm" id="btn-center-map"><i class="fa-solid fa-expand"></i> Reset View</button>
-          </div>
-        </div>
-
-        <!-- LEAFLET MAP ELEMENT -->
-        <div id="gis-main-map"></div>
-
-        <div class="map-statusbar">
-          <div class="status-stat" style="color:#f87171;"><i class="fa-solid fa-brain"></i> <span>AI Batch Probability: <strong id="lbl-batch-status">12 Cells (Max LSI: 97.3%)</strong></span></div>
-          <div class="status-stat"><i class="fa-solid fa-road"></i> <span>Lifelines: NH-10, NH-27, NH-29, NH-13</span></div>
-          <div class="status-stat"><i class="fa-solid fa-database"></i> <span>Offline Sync: Active</span></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- COLUMN 3: REAL-TIME CHART.JS & NATIVE LANGUAGE FIELD APP -->
-    <section class="panel-column right-panel">
-      
-      <div class="card tabbed-panel-card">
-        <!-- TABS -->
-        <div class="panel-tabs">
-          <button class="p-tab active" data-target="tab-telemetry">
-            <i class="fa-solid fa-chart-line"></i> <span id="lbl-tab-sensors">Telemetry</span>
-          </button>
-          <button class="p-tab" data-target="tab-fieldapp">
-            <i class="fa-solid fa-mobile-screen-button"></i> <span id="lbl-tab-fieldapp">Field Scout App</span>
-          </button>
-          <button class="p-tab" data-target="tab-audit">
-            <i class="fa-solid fa-terminal"></i> <span id="lbl-tab-audit">Audit Stream</span>
-          </button>
-        </div>
-
-        <!-- TAB 1: SENSOR TELEMETRY & CHART.JS -->
-        <div class="p-tab-content active" id="tab-telemetry">
+        <!-- ==================================================== -->
+        <!-- TAB 1: GIS LIVE COMMAND CENTER                       -->
+        <!-- ==================================================== -->
+        <div id="tab-command" class="tab-pane active">
           
-          <div class="station-meta-badge" id="active-station-header">
-            <div>
-              <h4 id="station-name-disp">NER-SIKK-01: Ranipool NH-10</h4>
-              <span class="station-coords" id="station-coords-disp">East Sikkim • Lifeline: NH-10 (Siliguri-Gangtok)</span>
+          <!-- METRIC STRIP (4 CARDS) -->
+          <div class="metric-grid">
+            <div class="glass-panel metric-card glow-danger">
+              <div class="metric-top">
+                <span class="metric-label">Critical Alert Sectors</span>
+                <i class="fa-solid fa-triangle-exclamation text-danger"></i>
+              </div>
+              <div class="metric-value font-mono">2 Zones</div>
+              <div class="metric-sub text-danger">Sikkim NH-10 & Dima Hasao Jatinga</div>
             </div>
-            <span class="badge badge-critical" id="station-status-disp">CRITICAL</span>
+
+            <div class="glass-panel metric-card">
+              <div class="metric-top">
+                <span class="metric-label">Peak 24h Precipitation</span>
+                <i class="fa-solid fa-cloud-rain text-cyan"></i>
+              </div>
+              <div class="metric-value font-mono text-cyan" id="disp-peak-rain">242 mm</div>
+              <div class="metric-sub text-cyan">Caine Threshold: 110 mm exceeded</div>
+            </div>
+
+            <div class="glass-panel metric-card">
+              <div class="metric-top">
+                <span class="metric-label">Active Corridor Blocks</span>
+                <i class="fa-solid fa-truck text-amber"></i>
+              </div>
+              <div class="metric-value font-mono text-amber">NH-10 & NH-27</div>
+              <div class="metric-sub text-amber">Safe Upper Martam Bypass Active</div>
+            </div>
+
+            <div class="glass-panel metric-card">
+              <div class="metric-top">
+                <span class="metric-label">Field Reports Logged</span>
+                <i class="fa-solid fa-database text-emerald"></i>
+              </div>
+              <div class="metric-value font-mono text-emerald" id="disp-reports-metric">1 Report</div>
+              <div class="metric-sub text-emerald">Synced via Offline SQLite DB</div>
+            </div>
           </div>
 
-          <!-- METRICS GRID -->
-          <div class="metrics-grid">
-            <div class="metric-card">
-              <span class="metric-label">Rainfall (Intensity)</span>
-              <span class="metric-val" id="disp-rain">54.2 <small>mm/h</small></span>
-              <span class="metric-sub text-danger"><i class="fa-solid fa-arrow-trend-up"></i> Severe monsoon</span>
-            </div>
-            <div class="metric-card">
-              <span class="metric-label">Soil Volumetric Moisture</span>
-              <span class="metric-val" id="disp-moisture">93.5 <small>%</small></span>
-              <span class="metric-sub text-danger">Liquefaction threshold</span>
-            </div>
-            <div class="metric-card">
-              <span class="metric-label">Pore Water Pressure</span>
-              <span class="metric-val" id="disp-pore">48.2 <small>kPa</small></span>
-              <span class="metric-sub text-danger"><i class="fa-solid fa-triangle-exclamation"></i> Critical shear limit</span>
-            </div>
-            <div class="metric-card">
-              <span class="metric-label">Slope Inclinometer Tilt</span>
-              <span class="metric-val" id="disp-tilt">3.8 <small>deg</small></span>
-              <span class="metric-sub text-warning">Accelerated creep</span>
-            </div>
-          </div>
-
-          <!-- CHART.JS 24H CORRELATION GRAPH -->
-          <div class="chart-container-box">
-            <div class="chart-header">
-              <h5>Telemetry Trend: Precipitation vs Pore Water Pressure</h5>
-            </div>
-            <canvas id="telemetry-chart" height="160"></canvas>
-          </div>
-
-          <!-- AI RISK GAUGE -->
-          <div class="ai-risk-gauge-card">
-            <div class="gauge-title-row">
-              <span>Landslide Susceptibility Index (LSI):</span>
-              <strong class="text-danger" id="disp-lsi">0.945 (CRITICAL)</strong>
-            </div>
-            <div class="gauge-bar-track">
-              <div class="gauge-bar-fill" id="gauge-bar" style="width: 94.5%;"></div>
-            </div>
-            <p class="gauge-desc">
-              Physical Factor of Safety ($FS$) dropped below 1.0. High-velocity slope failure predicted along primary transport route.
-            </p>
-          </div>
-
-        </div>
-
-        <!-- TAB 2: MULTILINGUAL FIELD SCOUT APP (OFFLINE-FIRST) -->
-        <div class="p-tab-content" id="tab-fieldapp">
-          
-          <div class="offline-app-banner" id="app-network-banner">
-            <i class="fa-solid fa-signal text-success"></i>
-            <span id="banner-text">Connected to Cloud Gateway. Offline sync engine ready.</span>
-          </div>
-
-          <form id="scout-report-form" class="scout-form">
+          <!-- 2-COLUMN COCKPIT (MAP + SECTOR INSPECTOR) -->
+          <div class="cockpit-grid">
             
-            <div class="form-row-split">
-              <div class="form-group">
-                <label id="lbl-reporter">Reporter Identification</label>
-                <input type="text" id="in-reporter" value="Sub-Inspector Lepcha (SDRF)" required>
+            <!-- Left: GIS Map Viewport -->
+            <div class="glass-panel map-panel">
+              
+              <!-- Map Top Bar: Layer Toggles & Hotspots -->
+              <div class="map-toolbar">
+                <div class="map-toolbar-left">
+                  <span class="toolbar-title"><i class="fa-solid fa-earth-asia"></i> 8-State GIS Array</span>
+                  <div class="map-layer-toggles">
+                    <label class="layer-toggle-btn active" id="toggle-heatmap">
+                      <input type="checkbox" id="chk-ml-heatmap" checked>
+                      <i class="fa-solid fa-fire text-danger"></i> AI Heatmap
+                    </label>
+                    <label class="layer-toggle-btn active" id="toggle-stations">
+                      <input type="checkbox" id="chk-stations" checked>
+                      <i class="fa-solid fa-tower-broadcast text-cyan"></i> 8-State Sensors
+                    </label>
+                    <label class="layer-toggle-btn active" id="toggle-bypass">
+                      <input type="checkbox" id="chk-bypass" checked>
+                      <i class="fa-solid fa-route text-emerald"></i> Safe Bypass
+                    </label>
+                    <label class="layer-toggle-btn active" id="toggle-buffers">
+                      <input type="checkbox" id="chk-buffers" checked>
+                      <i class="fa-solid fa-circle-notch text-amber"></i> 1.8km Buffers
+                    </label>
+                  </div>
+                </div>
+
+                <div class="map-toolbar-right">
+                  <select id="hotspot-select" class="hotspot-select-dropdown">
+                    <option value="sikkim">1. Sikkim: NH-10 Ranipool (CRITICAL)</option>
+                    <option value="assam">2. Assam: Dima Hasao Jatinga (CRITICAL)</option>
+                    <option value="manipur">3. Manipur: Noney Tupul Railway (CRITICAL)</option>
+                    <option value="meghalaya">4. Meghalaya: East Khasi Sohra (HIGH)</option>
+                    <option value="nagaland">5. Nagaland: Kohima South Bypass (HIGH)</option>
+                    <option value="arunachal">6. Arunachal: Tawang Pass (HIGH)</option>
+                    <option value="mizoram">7. Mizoram: Aizawl Melthum (MODERATE)</option>
+                    <option value="tripura">8. Tripura: Jampui Hills (MODERATE)</option>
+                  </select>
+                </div>
               </div>
-              <div class="form-group">
-                <label id="lbl-severity">Severity Level</label>
-                <select id="in-severity">
-                  <option value="CRITICAL" selected>CRITICAL - Road / Life Blocked</option>
-                  <option value="HIGH">HIGH - Slope Active Motion</option>
-                  <option value="MEDIUM">MEDIUM - Tension Cracks > 5cm</option>
-                  <option value="LOW">LOW - Early Seepage</option>
-                </select>
+
+              <!-- Map Container -->
+              <div id="gis-main-map" class="map-canvas"></div>
+
+              <!-- Floating Tactical Map Index -->
+              <div class="map-floating-legend">
+                <span class="legend-title">GIS Hazard Index</span>
+                <div class="legend-item">
+                  <span class="legend-dot red"></span>
+                  <span>Critical (&gt;80% LSI Failure)</span>
+                </div>
+                <div class="legend-item">
+                  <span class="legend-dot amber"></span>
+                  <span>High (Subsurface Slip)</span>
+                </div>
+                <div class="legend-item">
+                  <span class="legend-dot emerald"></span>
+                  <span>Safe Evacuation Bypass</span>
+                </div>
+              </div>
+
+              <!-- Map Status Footer -->
+              <div class="map-status-footer">
+                <span class="status-stat"><i class="fa-solid fa-brain text-danger"></i> AI Batch Probability: <strong id="lbl-batch-status" class="font-mono">12 Cells (Max LSI: 96.4%)</strong></span>
+                <span class="status-stat"><i class="fa-solid fa-road text-cyan"></i> Lifelines: NH-10, NH-27, NH-29, NH-13</span>
+                <span class="status-stat"><i class="fa-solid fa-satellite text-emerald"></i> Offline Sync: Active</span>
               </div>
             </div>
 
-            <div class="form-row-split">
-              <div class="form-group">
-                <label>Target State</label>
-                <select id="in-state">
-                  <option value="Sikkim" selected>Sikkim</option>
-                  <option value="Assam">Assam</option>
-                  <option value="Meghalaya">Meghalaya</option>
-                  <option value="Arunachal Pradesh">Arunachal Pradesh</option>
-                  <option value="Mizoram">Mizoram</option>
-                  <option value="Nagaland">Nagaland</option>
-                  <option value="Manipur">Manipur</option>
-                  <option value="Tripura">Tripura</option>
-                </select>
+            <!-- Right: 1-Column Sector Inspector -->
+            <div class="glass-panel inspector-panel">
+              <div class="inspector-header">
+                <span class="inspector-title"><i class="fa-solid fa-microchip text-danger"></i> Sector Inspector</span>
+                <span class="badge-status-pill danger" id="disp-sector-badge">CRITICAL</span>
               </div>
-              <div class="form-group">
-                <label id="lbl-roadstatus">Roadway Status</label>
-                <select id="in-roadstatus">
-                  <option value="BLOCKED">Completely Blocked</option>
-                  <option value="RESTRICTED">Single Lane Only</option>
-                  <option value="PASSABLE">Passable with Caution</option>
-                </select>
+
+              <div class="inspector-body">
+                <div>
+                  <h3 class="sector-name" id="disp-sector-name">Ranipool NH-10 Corridor</h3>
+                  <p class="sector-coords font-mono" id="disp-sector-coords">27.3389° N, 88.6065° E • East Sikkim</p>
+                </div>
+
+                <!-- Telemetry Metrics Card -->
+                <div class="telemetry-box">
+                  <div class="telemetry-row">
+                    <span class="text-muted">AI Hazard Probability</span>
+                    <span class="telemetry-val text-danger font-mono font-bold" id="disp-sector-prob">94%</span>
+                  </div>
+                  <!-- Gradient Progress Bar -->
+                  <div class="progress-track">
+                    <div class="progress-bar-danger" id="disp-sector-bar" style="width: 94%;"></div>
+                  </div>
+
+                  <div class="telemetry-row pt-2">
+                    <span class="text-muted">Factor of Safety (FoS)</span>
+                    <span class="telemetry-val font-mono font-bold text-danger" id="disp-sector-fos">0.82 (Failure Imminent)</span>
+                  </div>
+
+                  <div class="telemetry-row">
+                    <span class="text-muted">Pore Water Pressure</span>
+                    <span class="telemetry-val font-mono text-cyan" id="disp-sector-pore">48.2 kPa</span>
+                  </div>
+
+                  <div class="telemetry-row">
+                    <span class="text-muted">72h Antecedent Rain</span>
+                    <span class="telemetry-val font-mono text-main" id="disp-sector-rain">242 mm</span>
+                  </div>
+
+                  <div class="telemetry-row">
+                    <span class="text-muted">Identified Failure Mode</span>
+                    <span class="telemetry-val text-amber font-medium" id="disp-sector-factor">Toe Hydrostatic Shear</span>
+                  </div>
+                </div>
+
+                <!-- Prescribed Protocol Card -->
+                <div class="protocol-card">
+                  <div class="protocol-head">
+                    <i class="fa-solid fa-shield-cat text-danger"></i>
+                    <span>PRESCRIBED PROTOCOL</span>
+                  </div>
+                  <p class="protocol-text" id="disp-sector-protocol">
+                    Suspend commercial heavy convoy, engage Upper Martam Western Crest bypass, and broadcast automated Cell SMS in Nepali & Hindi to perimeter mobile towers.
+                  </p>
+                </div>
+              </div>
+
+              <div class="inspector-footer">
+                <button id="btn-transmit-callout" class="btn-block-danger">
+                  <i class="fa-solid fa-paper-plane"></i> Transmit Evacuation Callout
+                </button>
               </div>
             </div>
 
-            <div class="form-group">
-              <label id="lbl-hazard">GSI Landslide Classification</label>
-              <select id="in-hazard">
-                <option value="Active Debris Flow / Mudslide">Active Debris Flow / Mudslide</option>
-                <option value="Rockfall & Boulder Roll">Rockfall & Boulder Roll</option>
-                <option value="Rotational Slope Slip">Rotational Slope Slip</option>
-                <option value="Road Embankment Subsidence">Road Embankment Subsidence</option>
-                <option value="Retaining Wall Structural Failure">Retaining Wall Failure</option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label id="lbl-notes">Field Observations & Endangered Assets</label>
-              <textarea id="in-notes" rows="2" required>NH-10 Ranipool bridge approach covered in 1.5m slurry. Two commercial trucks stranded. SDRF evacuating 15 families uphill.</textarea>
-            </div>
-
-            <button type="submit" class="btn btn-primary btn-block" id="btn-submit-scout">
-              <i class="fa-solid fa-cloud-arrow-up"></i> <span id="lbl-submit-btn">Save & Queue Ground Report</span>
-            </button>
-          </form>
-
-          <!-- OUTBOX QUEUE -->
-          <div class="outbox-telemetry-box">
-            <div class="outbox-stat-row">
-              <h4><i class="fa-solid fa-inbox"></i> <span id="lbl-outbox-title">Device Outbox (Offline Queue)</span></h4>
-              <div class="outbox-badges">
-                <span class="badge badge-amber" id="badge-pending">0 Pending</span>
-                <span class="badge badge-success" id="badge-synced">1 Synced</span>
-              </div>
-            </div>
-            <div class="outbox-item-list" id="outbox-items-container">
-              <!-- Dynamically populated -->
-            </div>
           </div>
 
         </div>
 
-        <!-- TAB 3: LIVE AUDIT LOGS -->
-        <div class="p-tab-content" id="tab-audit">
-          <div class="audit-stream-header">
-            <h4>Live Centralized Event Stream (All 8 States)</h4>
-            <button class="btn btn-outline-sm" id="btn-clear-logs"><i class="fa-solid fa-trash"></i> Clear</button>
+        <!-- ==================================================== -->
+        <!-- TAB 2: SENSOR TELEMETRY & INSAR                      -->
+        <!-- ==================================================== -->
+        <div id="tab-analytics" class="tab-pane">
+          <div class="analytics-layout">
+            
+            <!-- Chart Card -->
+            <div class="glass-panel p-5">
+              <div class="chart-header">
+                <div>
+                  <h3 class="chart-title"><i class="fa-solid fa-chart-area text-cyan"></i> Piezometer Pore Water Pressure vs. Rainfall Surge</h3>
+                  <p class="chart-sub">Real-time geotechnical sensor feeds cross-referenced against infinite slope Mohr-Coulomb shear failure limits.</p>
+                </div>
+                <div class="chart-legend-box font-mono">
+                  <span class="chart-legend-item"><span class="legend-color cyan"></span> Rainfall (mm/h)</span>
+                  <span class="chart-legend-item"><span class="legend-color danger"></span> Pore Pressure (kPa)</span>
+                </div>
+              </div>
+
+              <div class="chart-container">
+                <canvas id="telemetryChart"></canvas>
+              </div>
+            </div>
+
+            <!-- InSAR & IoT Stations 2-Column Grid -->
+            <div class="sub-grid-2col">
+              
+              <!-- InSAR Interferometry Card -->
+              <div class="glass-panel p-5">
+                <div class="card-header-row">
+                  <h4 class="subcard-title"><i class="fa-solid fa-satellite text-purple"></i> Sentinel-1 InSAR Interferometry</h4>
+                  <button id="btn-refresh-insar" class="btn-text-link">
+                    <i class="fa-solid fa-arrows-rotate" id="icon-insar-spin"></i> Refresh Pass
+                  </button>
+                </div>
+                <p class="card-desc">Line-of-sight surface creep velocity tracking across high-relief slopes in East Khasi, Sikkim, and Kohima.</p>
+
+                <div class="insar-stat-list">
+                  <div>
+                    <div class="stat-row">
+                      <span class="text-muted">Surface Creep Velocity (&gt;12 mm/wk)</span>
+                      <span class="font-mono text-danger font-bold">18.4 mm/wk [HIGH]</span>
+                    </div>
+                    <div class="progress-track">
+                      <div class="progress-bar-danger" style="width: 88%;"></div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div class="stat-row">
+                      <span class="text-muted">Interferometric Coherence Quality</span>
+                      <span class="font-mono text-emerald font-bold">0.89 (Clear Coherence)</span>
+                    </div>
+                    <div class="progress-track">
+                      <div class="progress-bar-emerald" style="width: 89%;"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- IoT Field Stations Card -->
+              <div class="glass-panel p-5">
+                <h4 class="subcard-title mb-3"><i class="fa-solid fa-microchip text-emerald"></i> IoT Field Telemetry Stations</h4>
+                <ul class="iot-station-list font-mono">
+                  <li class="iot-station-item">
+                    <span>Borehole Piezometer #01 (Ranipool, SKM)</span>
+                    <span class="text-emerald">LIVE (Solar 98%)</span>
+                  </li>
+                  <li class="iot-station-item">
+                    <span>Inclinometer Array #03 (Jatinga, ASM)</span>
+                    <span class="text-emerald">LIVE (0.04° Shift)</span>
+                  </li>
+                  <li class="iot-station-item">
+                    <span>Borehole Piezometer #04 (Cherrapunji, MEG)</span>
+                    <span class="text-emerald">LIVE (138 kPa)</span>
+                  </li>
+                  <li class="iot-station-item">
+                    <span>Optical Extensometer #02 (Tupul, MAN)</span>
+                    <span class="text-amber">MAINTENANCE DUE</span>
+                  </li>
+                </ul>
+              </div>
+
+            </div>
+
           </div>
-          <div class="audit-log-terminal" id="audit-log-list">
-            <!-- Dynamically populated -->
+        </div>
+
+        <!-- ==================================================== -->
+        <!-- TAB 3: ARTERIAL ROAD NETWORK                         -->
+        <!-- ==================================================== -->
+        <div id="tab-roads" class="tab-pane">
+          <div class="roads-layout">
+            <div class="glass-panel p-5">
+              <h3 class="chart-title"><i class="fa-solid fa-road text-cyan"></i> Northeast National Highway & Lifeline Network</h3>
+              <p class="chart-sub">Automated synchronization with Border Roads Organisation (BRO), NHIDCL, and State Disaster Desks.</p>
+            </div>
+
+            <div class="road-cards-list" id="road-cards-container">
+              <!-- Dynamically populated from JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================================================== -->
+        <!-- TAB 4: CITIZEN FIELD INCIDENT LOG (OFFLINE FIRST)    -->
+        <!-- ==================================================== -->
+        <div id="tab-crowd" class="tab-pane">
+          <div class="crowd-layout">
+            
+            <!-- Left: Incident Form -->
+            <div class="glass-panel p-5">
+              <h3 class="chart-title mb-1"><i class="fa-solid fa-camera text-danger"></i> Report Slope Anomaly</h3>
+              <p class="chart-sub mb-4">Works 100% offline. Stored in on-device encrypted SQLite buffer, auto-syncs on reconnect.</p>
+
+              <form id="form-field-report" class="space-y-3">
+                <div class="form-group">
+                  <label class="form-label">Exact Landmark or Highway Kilometer</label>
+                  <input type="text" id="inp-location" required placeholder="e.g. NH-10 km 22 near Ranipool bridge culvert" class="form-input">
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Observed Hazard Phenomenon</label>
+                  <select id="sel-hazard" class="form-select">
+                    <option value="Tension Crack">Tension Crack / Fissure Opening</option>
+                    <option value="Debris Flow">Active Debris Flow / Mudslide</option>
+                    <option value="Rotational Slide">Cut-Slope Failure & Slump</option>
+                    <option value="Rockfall">Rockfall & Road Barrier Breach</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Tension Crack Width Measurement</label>
+                  <div class="slider-row">
+                    <input type="range" id="slider-crack" min="1" max="50" value="12" step="1" class="w-full">
+                    <span class="crack-val font-mono font-bold text-cyan" id="disp-crack-val">12 cm</span>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Field Notes / Stranded Assets</label>
+                  <textarea id="inp-notes" rows="2" placeholder="e.g. 2 heavy trucks stranded, water seepage accelerating from toe..." class="form-textarea"></textarea>
+                </div>
+
+                <div class="photo-dropzone">
+                  <i class="fa-solid fa-camera"></i>
+                  <span>Geo-Tagged Field Photo Attached (GPS Fix Active)</span>
+                </div>
+
+                <button type="submit" class="btn-primary-gradient w-full">
+                  <i class="fa-solid fa-paper-plane"></i> Save & Queue Ground Report
+                </button>
+              </form>
+            </div>
+
+            <!-- Right: Incident Stream -->
+            <div class="glass-panel p-5 flex-col justify-between">
+              <div>
+                <div class="flex-between mb-2">
+                  <h3 class="chart-title">Live Field Incident Feed</h3>
+                  <span class="badge-status-pill emerald" id="disp-incident-count">1 Logged</span>
+                </div>
+                <p class="chart-sub mb-3">Prioritized and indexed for State Emergency Operations Centers (SEOC 112).</p>
+
+                <div class="incident-feed-list" id="incident-feed-list">
+                  <!-- Dynamically populated from JS -->
+                </div>
+              </div>
+
+              <div class="outbox-encryption-footer font-mono">
+                <i class="fa-solid fa-lock text-emerald"></i> AES-256 Encrypted &bull; Local-First SQLite / IndexedDB Buffer
+              </div>
+            </div>
+
           </div>
         </div>
 
       </div>
 
-    </section>
+    </main>
+  </div>
 
-  </main>
+  <!-- Audio Siren Element -->
+  <audio id="siren-audio" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" preload="auto"></audio>
 
-  <!-- Leaflet GIS -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <!-- Leaflet Heat Plugin for AI Probability Heatmap -->
-  <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- Main Platform App Script -->
+  <!-- Main Platform Controller -->
   <script src="/app.js"></script>
 </body>
 </html>
