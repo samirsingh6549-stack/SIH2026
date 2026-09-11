@@ -841,12 +841,12 @@ function initTelemetryChart() {
 
   const ctx = canvas.getContext('2d');
   const rainGradient = ctx.createLinearGradient(0, 0, 0, 260);
-  rainGradient.addColorStop(0, 'rgba(56, 189, 248, 0.35)');
-  rainGradient.addColorStop(1, 'rgba(56, 189, 248, 0.0)');
+  rainGradient.addColorStop(0, 'rgba(13, 148, 136, 0.25)');
+  rainGradient.addColorStop(1, 'rgba(13, 148, 136, 0.0)');
 
   const poreGradient = ctx.createLinearGradient(0, 0, 0, 260);
-  poreGradient.addColorStop(0, 'rgba(239, 68, 68, 0.35)');
-  poreGradient.addColorStop(1, 'rgba(239, 68, 68, 0.0)');
+  poreGradient.addColorStop(0, 'rgba(220, 38, 38, 0.2)');
+  poreGradient.addColorStop(1, 'rgba(220, 38, 38, 0.0)');
 
   telemetryChart = new Chart(ctx, {
     type: 'line',
@@ -856,25 +856,25 @@ function initTelemetryChart() {
         {
           label: 'Precipitation Intensity (mm/h)',
           data: [24, 52, 110, 195, 260, 312],
-          borderColor: '#38bdf8',
+          borderColor: '#0D9488',
           backgroundColor: rainGradient,
           fill: true,
           tension: 0.38,
           borderWidth: 2.2,
-          pointBackgroundColor: '#38bdf8',
+          pointBackgroundColor: '#0D9488',
           pointRadius: 4,
           yAxisID: 'yRain'
         },
         {
           label: 'Pore Water Pressure (kPa)',
           data: [38, 56, 84, 112, 129, 138],
-          borderColor: '#ef4444',
+          borderColor: '#DC2626',
           backgroundColor: poreGradient,
           borderDash: [5, 4],
           fill: false,
           tension: 0.38,
           borderWidth: 2.2,
-          pointBackgroundColor: '#ef4444',
+          pointBackgroundColor: '#DC2626',
           pointRadius: 4,
           yAxisID: 'yPore'
         }
@@ -890,32 +890,35 @@ function initTelemetryChart() {
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: 'rgba(3, 7, 18, 0.95)',
-          borderColor: 'rgba(255, 255, 255, 0.1)',
+          backgroundColor: '#FFFFFF',
+          borderColor: '#E2E8F0',
           borderWidth: 1,
+          titleColor: '#1A202C',
+          bodyColor: '#475569',
           titleFont: { family: 'Plus Jakarta Sans', size: 12, weight: 'bold' },
           bodyFont: { family: 'JetBrains Mono', size: 11 },
-          padding: 10
+          padding: 10,
+          boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'
         }
       },
       scales: {
         x: {
-          grid: { color: 'rgba(255, 255, 255, 0.05)' },
-          ticks: { color: '#64748b', font: { family: 'JetBrains Mono', size: 10 } }
+          grid: { color: '#EDF2F7' },
+          ticks: { color: '#64748B', font: { family: 'JetBrains Mono', size: 10 } }
         },
         yRain: {
           type: 'linear',
           position: 'left',
-          grid: { color: 'rgba(255, 255, 255, 0.05)' },
-          ticks: { color: '#38bdf8', font: { family: 'JetBrains Mono', size: 10 } },
-          title: { display: true, text: 'Rain (mm)', color: '#38bdf8', font: { size: 10 } }
+          grid: { color: '#EDF2F7' },
+          ticks: { color: '#0D9488', font: { family: 'JetBrains Mono', size: 10 } },
+          title: { display: true, text: 'Rain (mm)', color: '#0D9488', font: { size: 10, weight: 'bold' } }
         },
         yPore: {
           type: 'linear',
           position: 'right',
           grid: { drawOnChartArea: false },
-          ticks: { color: '#ef4444', font: { family: 'JetBrains Mono', size: 10 } },
-          title: { display: true, text: 'Pore Pressure (kPa)', color: '#ef4444', font: { size: 10 } }
+          ticks: { color: '#DC2626', font: { family: 'JetBrains Mono', size: 10 } },
+          title: { display: true, text: 'Pore Pressure (kPa)', color: '#DC2626', font: { size: 10, weight: 'bold' } }
         }
       }
     }
