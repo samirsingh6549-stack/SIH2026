@@ -424,6 +424,26 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, () => {
-  console.log(`[NER-LEWS] Unified Platform covering all 8 States: http://localhost:${PORT}`);
+function startServer(portToTry) {
+  server.listen(portToTry, () => {
+    console.log(`\n===============================================================`);
+    console.log(` [NER-LEWS] TerraSafe AI Unified Platform is LIVE!`);
+    console.log(` Web Dashboard: http://localhost:${portToTry}`);
+    console.log(` Covering all 8 North Eastern States (Sikkim to Tripura)`);
+    console.log(`===============================================================\n`);
+  });
+}
+
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    const nextPort = PORT + 1;
+    console.warn(`[WARN] Port ${PORT} is already occupied by an active process.`);
+    console.log(`[NER-LEWS] Automatically falling back to port ${nextPort}...`);
+    startServer(nextPort);
+  } else {
+    console.error('[ERROR] Server failed to start:', err);
+  }
 });
+
+startServer(PORT);
+
