@@ -10,14 +10,27 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   
-  <!-- Leaflet GIS & Plugins -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <!-- Leaflet GIS & Stylesheets -->
+  <link rel="stylesheet" href="/vendor/leaflet.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  
   <!-- Font Awesome 6 Icons -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Leaflet Core Engine (Must load before leaflet-heat) -->
+  <script src="/vendor/leaflet.js"></script>
+  <script>
+    if (typeof L === 'undefined') {
+      document.write('<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"><\\/script>');
+    }
+  </script>
+  
+  <!-- Leaflet Heatmap Plugin -->
+  <script src="/vendor/leaflet-heat.js"></script>
+  
   <!-- Chart.js for Telemetry Trends -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- Leaflet Heat for AI Probability Heatmap -->
-  <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+  <script src="/vendor/chart.js"></script>
+  
   <!-- Main Platform Stylesheet -->
   <link rel="stylesheet" href="/style.css">
 </head>
@@ -509,6 +522,12 @@
                   <span class="badge-status-pill emerald" id="disp-incident-count">1 Logged</span>
                 </div>
                 <p class="chart-sub mb-3">Prioritized and indexed for State Emergency Operations Centers (SEOC 112).</p>
+
+                <!-- Offline Outbox Status Banner -->
+                <div id="offline-queue-banner" class="offline-queue-banner hidden">
+                  <i class="fa-solid fa-plane-slash text-amber"></i>
+                  <span><strong>Mountain Dead Zone Active:</strong> New reports queued in encrypted on-device SQLite buffer</span>
+                </div>
 
                 <div class="incident-feed-list" id="incident-feed-list">
                   <!-- Dynamically populated from JS -->

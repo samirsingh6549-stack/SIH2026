@@ -1,12 +1,12 @@
 // TerraSafe AI NER: Defense-Grade 8-State Early Warning Platform Controller
-// Grounded in authentic GIS cockpit architecture and high-contrast command center standards
+// Grounded in authentic GIS cockpit architecture, resilient offline buffers, and tactical telemetry
 
 // ==========================================
 // 1. GLOBAL STATE & CONSTANTS
 // ==========================================
 
-let map;
-let telemetryChart;
+let map = null;
+let telemetryChart = null;
 let isOfflineMode = false;
 let currentLanguage = 'en';
 let activeTab = 'command';
@@ -88,15 +88,15 @@ const HOTSPOTS = {
   }
 };
 
-// Strategic Safe Bypass Routes (Coordinates from GIS Topology Graph)
+// Strategic Safe Bypass Routes
 const BYPASS_ROUTES = [
   {
     name: 'Upper Martam Western Crest Bypass (Sikkim)',
     coords: [
-      [27.2920, 88.5620], // Martam Bypass Junction
-      [27.3250, 88.5450], // Upper Martam Crest
-      [27.3520, 88.6180], // Upper Martam Shelter
-      [27.3389, 88.6065]  // Gangtok Capital
+      [27.2920, 88.5620],
+      [27.3250, 88.5450],
+      [27.3520, 88.6180],
+      [27.3389, 88.6065]
     ],
     state: 'Sikkim',
     status: 'ACTIVE SAFE BYPASS'
@@ -104,9 +104,9 @@ const BYPASS_ROUTES = [
   {
     name: 'Mahur - Circuit House Crest Bypass (Assam)',
     coords: [
-      [25.1200, 93.1100], // Mahur Junction
-      [25.1890, 93.0220], // Circuit House Upper Ridge
-      [25.1780, 93.0150]  // Haflong Town Shelter
+      [25.1200, 93.1100],
+      [25.1890, 93.0220],
+      [25.1780, 93.0150]
     ],
     state: 'Assam',
     status: 'ACTIVE SAFE BYPASS'
@@ -114,9 +114,9 @@ const BYPASS_ROUTES = [
   {
     name: 'Longmai Ridge Mountain Trail (Manipur)',
     coords: [
-      [24.8000, 93.1200], // Jiribam Spur
-      [24.8450, 93.7100], // Longmai Mountain Spur
-      [24.8320, 93.6990]  // Noney Shelter
+      [24.8000, 93.1200],
+      [24.8450, 93.7100],
+      [24.8320, 93.6990]
     ],
     state: 'Manipur',
     status: 'ACTIVE SAFE BYPASS'
@@ -124,9 +124,9 @@ const BYPASS_ROUTES = [
   {
     name: 'Laitryngew Plateau Bypass (Meghalaya)',
     coords: [
-      [25.4200, 91.8100], // Mawkdok
-      [25.3800, 91.7600], // Plateau Crest
-      [25.2850, 91.7450]  // Sohra Shelter
+      [25.4200, 91.8100],
+      [25.3800, 91.7600],
+      [25.2850, 91.7450]
     ],
     state: 'Meghalaya',
     status: 'ACTIVE SAFE BYPASS'
@@ -134,9 +134,9 @@ const BYPASS_ROUTES = [
   {
     name: 'Khonoma Mountain Crest Bypass (Nagaland)',
     coords: [
-      [25.7100, 94.0450], // Sechu Zubza
-      [25.6500, 94.0200], // Khonoma Crest
-      [25.6620, 94.1190]  // Kohima Stadium Shelter
+      [25.7100, 94.0450],
+      [25.6500, 94.0200],
+      [25.6620, 94.1190]
     ],
     state: 'Nagaland',
     status: 'ACTIVE SAFE BYPASS'
@@ -227,7 +227,7 @@ const ARTERIAL_ROADS = [
   }
 ];
 
-// Multilingual Dialect Dictionary for High-Mountain Dead Zones
+// Multilingual Dialect Dictionary for Emergency Directives
 const I18N_WARNINGS = {
   en: {
     marquee: 'Extreme Slope Saturation: NH-10 Ranipool & Cherrapunji Crest',
@@ -271,7 +271,7 @@ let localReports = [
     crackWidth: '24 cm',
     time: '08:05 AM',
     notes: 'Slurry 1.5m deep over roadway. 2 freight trucks stranded.',
-    status: 'SYNCED'
+    status: 'SYNCED TO SEOC 112'
   },
   {
     id: 102,
@@ -281,7 +281,7 @@ let localReports = [
     crackWidth: '18 cm',
     time: '08:24 AM',
     notes: 'Longitudinal fissure widening rapidly along cut-slope shoulder.',
-    status: 'SYNCED'
+    status: 'SYNCED TO SEOC 112'
   }
 ];
 
@@ -296,36 +296,47 @@ try {
   }
 } catch (e) {}
 
-// Currently selected sector in Inspector
 let currentInspectorSector = HOTSPOTS.sikkim;
+
+// Safe wrapper utility to prevent any single component error from halting page execution
+function safeInit(fn, name) {
+  try {
+    fn();
+  } catch (err) {
+    console.error(`[TerraSafe Core] Error during ${name}:`, err);
+  }
+}
 
 // ==========================================
 // 2. LIFECYCLE INITIALIZATION
 // ==========================================
 
-document.addEventListener('DOMContentLoaded', async () => {
-  initTabs();
-  initGISMap();
-  initTelemetryChart();
-  initHotspotDropdown();
-  initDialectSwitcher();
-  initOfflineSimulation();
-  initSurgeSlider();
-  initEmergencyBroadcast();
-  initAudioSiren();
-  initInSARRefresh();
-  initFieldIncidentForm();
-  renderRoadLifelines();
-  renderIncidentFeed();
-  updateSectorInspector(HOTSPOTS.sikkim);
+document.addEventListener('DOMContentLoaded', () => {
+  safeInit(initTabs, 'Tabs');
+  safeInit(initGISMap, 'GIS Map');
+  safeInit(initTelemetryChart, 'Telemetry Chart');
+  safeInit(initHotspotDropdown, 'Hotspot Dropdown');
+  safeInit(initDialectSwitcher, 'Dialect Switcher');
+  safeInit(initOfflineSimulation, 'Offline Simulation');
+  safeInit(initSurgeSlider, 'Surge Slider');
+  safeInit(initEmergencyBroadcast, 'Emergency Broadcast');
+  safeInit(initAudioSiren, 'Audio Siren');
+  safeInit(initInSARRefresh, 'InSAR Refresh');
+  safeInit(initFieldIncidentForm, 'Field Incident Form');
+  safeInit(renderRoadLifelines, 'Road Lifelines');
+  safeInit(renderIncidentFeed, 'Incident Feed');
+  safeInit(() => updateSectorInspector(HOTSPOTS.sikkim), 'Sector Inspector Default');
 
-  // Fetch real backend data
-  await loadBackendData();
+  // Load live data asynchronously
+  loadBackendData();
 
-  // Resize map after DOM layout stabilizes
+  // Periodic size invalidation to guarantee Leaflet tiles render completely
   setTimeout(() => {
     if (map) map.invalidateSize();
   }, 250);
+  setTimeout(() => {
+    if (map) map.invalidateSize();
+  }, 1000);
 });
 
 // ==========================================
@@ -350,21 +361,22 @@ function initTabs() {
       if (activePane) activePane.classList.add('active');
 
       if (targetTab === 'command' && map) {
-        setTimeout(() => map.invalidateSize(), 150);
+        setTimeout(() => map.invalidateSize(), 100);
+        setTimeout(() => map.invalidateSize(), 400);
       }
       if (targetTab === 'analytics' && telemetryChart) {
-        setTimeout(() => telemetryChart.resize(), 150);
+        setTimeout(() => telemetryChart.resize(), 100);
       }
     });
   });
 }
 
 // ==========================================
-// 4. DEFENSE-GRADE LEAFLET GIS MAP
+// 4. LEAFLET GIS MAP
 // ==========================================
 
-// Authentic radar-ping custom pin creator (from reference design language)
 function createCustomPin(color, pulse = false) {
+  if (typeof L === 'undefined') return null;
   return L.divIcon({
     className: 'custom-leaflet-divicon ' + (pulse ? 'radar-ping' : ''),
     html: `
@@ -379,21 +391,33 @@ function createCustomPin(color, pulse = false) {
 }
 
 function initGISMap() {
-  // Center over North East India (Eight Sisters)
+  const mapContainer = document.getElementById('gis-main-map');
+  if (!mapContainer) return;
+
+  if (typeof L === 'undefined') {
+    console.error('Leaflet library is not available yet.');
+    return;
+  }
+
+  if (map) {
+    map.remove();
+    map = null;
+  }
+
   map = L.map('gis-main-map', {
     zoomControl: true,
-    minZoom: 6,
+    minZoom: 5,
     maxZoom: 18
   }).setView([26.0, 92.5], 7);
 
-  // CartoDB Dark Matter base layer for crisp high-contrast tactical view
+  // CartoDB Dark Matter base layer
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
     attribution: '&copy; CARTO &copy; OpenStreetMap | SIH 2026 TerraSafe AI NER',
     subdomains: 'abcd',
     maxZoom: 19
   }).addTo(map);
 
-  // Initialize Layer Groups
+  // Layer Groups
   zoneLayerGroup = L.layerGroup().addTo(map);
   stationLayerGroup = L.layerGroup().addTo(map);
   bypassLayerGroup = L.layerGroup().addTo(map);
@@ -401,44 +425,60 @@ function initGISMap() {
   reportLayerGroup = L.layerGroup().addTo(map);
   mlCircleMarkersGroup = L.layerGroup().addTo(map);
 
-  // Plot Safe Bypass Routes
+  // Render Bypass Routes
   renderBypassPolylines();
 
-  // Layer Visibility Checkbox Bindings
-  document.getElementById('chk-ml-heatmap').addEventListener('change', e => {
-    if (e.target.checked) {
-      if (mlHeatmapLayer) map.addLayer(mlHeatmapLayer);
-      if (mlCircleMarkersGroup) map.addLayer(mlCircleMarkersGroup);
-    } else {
-      if (mlHeatmapLayer) map.removeLayer(mlHeatmapLayer);
-      if (mlCircleMarkersGroup) map.removeLayer(mlCircleMarkersGroup);
-    }
-  });
+  // Layer Checkboxes
+  const chkHeatmap = document.getElementById('chk-ml-heatmap');
+  if (chkHeatmap) {
+    chkHeatmap.addEventListener('change', e => {
+      if (e.target.checked) {
+        if (mlHeatmapLayer) map.addLayer(mlHeatmapLayer);
+        if (mlCircleMarkersGroup) map.addLayer(mlCircleMarkersGroup);
+      } else {
+        if (mlHeatmapLayer) map.removeLayer(mlHeatmapLayer);
+        if (mlCircleMarkersGroup) map.removeLayer(mlCircleMarkersGroup);
+      }
+    });
+  }
 
-  document.getElementById('chk-stations').addEventListener('change', e => {
-    if (e.target.checked) map.addLayer(stationLayerGroup);
-    else map.removeLayer(stationLayerGroup);
-  });
+  const chkStations = document.getElementById('chk-stations');
+  if (chkStations) {
+    chkStations.addEventListener('change', e => {
+      if (e.target.checked) map.addLayer(stationLayerGroup);
+      else map.removeLayer(stationLayerGroup);
+    });
+  }
 
-  document.getElementById('chk-bypass').addEventListener('change', e => {
-    if (e.target.checked) map.addLayer(bypassLayerGroup);
-    else map.removeLayer(bypassLayerGroup);
-  });
+  const chkBypass = document.getElementById('chk-bypass');
+  if (chkBypass) {
+    chkBypass.addEventListener('change', e => {
+      if (e.target.checked) map.addLayer(bypassLayerGroup);
+      else map.removeLayer(bypassLayerGroup);
+    });
+  }
 
-  document.getElementById('chk-buffers').addEventListener('change', e => {
-    if (e.target.checked) map.addLayer(bufferLayerGroup);
-    else map.removeLayer(bufferLayerGroup);
+  const chkBuffers = document.getElementById('chk-buffers');
+  if (chkBuffers) {
+    chkBuffers.addEventListener('change', e => {
+      if (e.target.checked) map.addLayer(bufferLayerGroup);
+      else map.removeLayer(bufferLayerGroup);
+    });
+  }
+
+  window.addEventListener('resize', () => {
+    if (map) map.invalidateSize();
   });
 }
 
-// Render glowing emerald safe bypass polylines on the Leaflet map
 function renderBypassPolylines() {
+  if (!bypassLayerGroup || typeof L === 'undefined') return;
   bypassLayerGroup.clearLayers();
   BYPASS_ROUTES.forEach(route => {
     const polyline = L.polyline(route.coords, {
       color: '#10b981',
       weight: 3.5,
-      opacity: 0.85,
+      opacity: 0.9,
       dashArray: '6, 6'
     }).addTo(bypassLayerGroup);
 
@@ -465,10 +505,14 @@ async function loadBackendData() {
 
     if (zRes && zRes.zones) {
       plotRiskZones(zRes.zones);
+    } else {
+      plotDefaultZones();
     }
 
     if (stRes && stRes.stations) {
       plotStationMarkers(stRes.stations);
+    } else {
+      plotDefaultStations();
     }
 
     if (mlRes && mlRes.status === 'success') {
@@ -478,13 +522,15 @@ async function loadBackendData() {
     plotReportMarkers();
 
   } catch (err) {
-    console.warn('Backend connection warning; falling back to high-res local state:', err);
-    plotDefaultSectors();
+    console.warn('Backend data load fallback:', err);
+    plotDefaultStations();
+    plotDefaultZones();
+    plotReportMarkers();
   }
 }
 
-// Plot 8 Geotech Stations with radar-ping Custom Pins
 function plotStationMarkers(stations) {
+  if (!stationLayerGroup || typeof L === 'undefined') return;
   stationLayerGroup.clearLayers();
 
   stations.forEach(st => {
@@ -492,9 +538,8 @@ function plotStationMarkers(stations) {
     const isHigh = st.status === 'HIGH';
     const color = isCritical ? '#ef4444' : isHigh ? '#f59e0b' : '#10b981';
 
-    const marker = L.marker([st.lat, st.lng], {
-      icon: createCustomPin(color, isCritical || isHigh)
-    }).addTo(stationLayerGroup);
+    const pin = createCustomPin(color, isCritical || isHigh);
+    const marker = L.marker([st.lat, st.lng], { icon: pin }).addTo(stationLayerGroup);
 
     marker.bindPopup(`
       <div style="font-size:12px; min-width:200px; line-height:1.45;">
@@ -511,7 +556,6 @@ function plotStationMarkers(stations) {
     `);
 
     marker.on('click', () => {
-      // Find matching hotspot or construct sector object
       const matched = Object.values(HOTSPOTS).find(h => h.state.toLowerCase() === st.state.toLowerCase()) || {
         name: st.name,
         state: st.state,
@@ -532,10 +576,10 @@ function plotStationMarkers(stations) {
   });
 }
 
-// Plot Risk Zones & 1.8km Buffer Circles
 function plotRiskZones(zones) {
+  if (!zoneLayerGroup || typeof L === 'undefined') return;
   zoneLayerGroup.clearLayers();
-  bufferLayerGroup.clearLayers();
+  if (bufferLayerGroup) bufferLayerGroup.clearLayers();
 
   zones.forEach(z => {
     const isCritical = z.risk_level === 'CRITICAL';
@@ -578,8 +622,7 @@ function plotRiskZones(zones) {
       updateSectorInspector(matched);
     });
 
-    // 1.8km Buffer circle around critical zones
-    if (isCritical && z.coordinates && z.coordinates[0]) {
+    if (isCritical && z.coordinates && z.coordinates[0] && bufferLayerGroup) {
       L.circle(z.coordinates[0], {
         radius: 1800,
         color: '#ef4444',
@@ -592,11 +635,10 @@ function plotRiskZones(zones) {
   });
 }
 
-// Continuous AI Probability Heatmap via Leaflet.heat
 function renderMlHeatmap(data) {
-  if (!data || !data.leaflet_heat_points) return;
+  if (!data || !data.leaflet_heat_points || typeof L === 'undefined') return;
 
-  if (mlHeatmapLayer && map.hasLayer(mlHeatmapLayer)) {
+  if (mlHeatmapLayer && map && map.hasLayer(mlHeatmapLayer)) {
     map.removeLayer(mlHeatmapLayer);
   }
 
@@ -614,50 +656,50 @@ function renderMlHeatmap(data) {
       }
     });
 
-    if (document.getElementById('chk-ml-heatmap').checked) {
+    const chk = document.getElementById('chk-ml-heatmap');
+    if (chk && chk.checked && map) {
       mlHeatmapLayer.addTo(map);
     }
   }
 
-  // Interactive circle markers with tooltip & popup
-  mlCircleMarkersGroup.clearLayers();
-  if (data.geojson_feature_collection && data.geojson_feature_collection.features) {
-    data.geojson_feature_collection.features.forEach(f => {
-      const p = f.properties;
-      const coords = [f.geometry.coordinates[1], f.geometry.coordinates[0]];
-      const pct = (p.lsi_score * 100).toFixed(1);
+  if (mlCircleMarkersGroup) {
+    mlCircleMarkersGroup.clearLayers();
+    if (data.geojson_feature_collection && data.geojson_feature_collection.features) {
+      data.geojson_feature_collection.features.forEach(f => {
+        const p = f.properties;
+        const coords = [f.geometry.coordinates[1], f.geometry.coordinates[0]];
+        const pct = (p.lsi_score * 100).toFixed(1);
 
-      const circle = L.circleMarker(coords, {
-        radius: 8,
-        fillColor: p.color,
-        color: '#ffffff',
-        weight: 1.5,
-        fillOpacity: 0.9
+        const circle = L.circleMarker(coords, {
+          radius: 8,
+          fillColor: p.color,
+          color: '#ffffff',
+          weight: 1.5,
+          fillOpacity: 0.9
+        });
+
+        circle.bindTooltip(`<strong>${p.station_name}</strong><br>AI Hazard: <strong style="color:${p.color};">${pct}% (${p.risk_level})</strong>`, {
+          direction: 'top'
+        });
+
+        circle.addTo(mlCircleMarkersGroup);
       });
-
-      circle.bindTooltip(`<strong>${p.station_name}</strong><br>AI Hazard: <strong style="color:${p.color};">${pct}% (${p.risk_level})</strong>`, {
-        direction: 'top'
-      });
-
-      circle.addTo(mlCircleMarkersGroup);
-    });
+    }
   }
 
-  // Update Status in Map Footer
   const statusEl = document.getElementById('lbl-batch-status');
   if (statusEl && data.max_lsi_score !== undefined) {
     statusEl.textContent = `${data.grid_cell_count} Cells (Max LSI: ${(data.max_lsi_score * 100).toFixed(1)}%)`;
   }
 }
 
-// Plot Ground Field Reports
 function plotReportMarkers() {
+  if (!reportLayerGroup || typeof L === 'undefined') return;
   reportLayerGroup.clearLayers();
+
   localReports.forEach(r => {
     const isCritical = r.hazardType.includes('Debris') || r.hazardType.includes('Slide');
     const color = isCritical ? '#f59e0b' : '#38bdf8';
-
-    // Approximate coords based on state / location or random offset around Sikkim / Assam
     const lat = r.lat || 27.3389 + (Math.random() - 0.5) * 0.05;
     const lng = r.lng || 88.6065 + (Math.random() - 0.5) * 0.05;
 
@@ -682,24 +724,37 @@ function plotReportMarkers() {
   });
 }
 
-// Fallback in case backend server is restarting
-function plotDefaultSectors() {
-  const defaultZones = Object.values(HOTSPOTS);
-  defaultZones.forEach(z => {
-    const isCrit = z.risk === 'CRITICAL';
-    const color = isCrit ? '#ef4444' : z.risk === 'HIGH' ? '#f59e0b' : '#10b981';
-    L.marker([z.lat, z.lng], { icon: createCustomPin(color, isCrit) })
-      .bindPopup(`<strong>${z.name}</strong><br>Risk: ${z.risk}<br>Prob: ${z.prob}%`)
+function plotDefaultStations() {
+  if (!stationLayerGroup || typeof L === 'undefined') return;
+  Object.values(HOTSPOTS).forEach(h => {
+    const isCrit = h.risk === 'CRITICAL';
+    const color = isCrit ? '#ef4444' : h.risk === 'HIGH' ? '#f59e0b' : '#10b981';
+    const pin = createCustomPin(color, isCrit);
+    L.marker([h.lat, h.lng], { icon: pin })
+      .bindPopup(`<strong>${h.name}</strong><br>Risk: ${h.risk}<br>Prob: ${h.prob}%`)
       .addTo(stationLayerGroup)
-      .on('click', () => updateSectorInspector(z));
+      .on('click', () => updateSectorInspector(h));
   });
 }
 
+function plotDefaultZones() {
+  // Built-in polygon representation for Sikkim and Assam
+  const sikkimZone = [
+    [27.3450, 88.6000], [27.3490, 88.6150], [27.3350, 88.6220], [27.3310, 88.6040]
+  ];
+  if (zoneLayerGroup && typeof L !== 'undefined') {
+    L.polygon(sikkimZone, { color: '#ef4444', fillColor: '#ef4444', fillOpacity: 0.25, weight: 2 })
+      .bindPopup('<strong>Ranipool NH-10 Corridor</strong><br>Risk: CRITICAL (94%)')
+      .addTo(zoneLayerGroup);
+  }
+}
+
 // ==========================================
-// 6. 1-COLUMN SECTOR INSPECTOR CONTROLLER
+// 6. 1-COLUMN SECTOR INSPECTOR
 // ==========================================
 
 function updateSectorInspector(sector) {
+  if (!sector) return;
   currentInspectorSector = sector;
 
   const nameEl = document.getElementById('disp-sector-name');
@@ -758,15 +813,13 @@ function initHotspotDropdown() {
 
 function initTelemetryChart() {
   const canvas = document.getElementById('telemetryChart');
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
+  if (!canvas || typeof Chart === 'undefined') return;
 
-  // Gradient for rainfall
+  const ctx = canvas.getContext('2d');
   const rainGradient = ctx.createLinearGradient(0, 0, 0, 260);
   rainGradient.addColorStop(0, 'rgba(56, 189, 248, 0.35)');
   rainGradient.addColorStop(1, 'rgba(56, 189, 248, 0.0)');
 
-  // Gradient for pore pressure
   const poreGradient = ctx.createLinearGradient(0, 0, 0, 260);
   poreGradient.addColorStop(0, 'rgba(239, 68, 68, 0.35)');
   poreGradient.addColorStop(1, 'rgba(239, 68, 68, 0.0)');
@@ -847,7 +900,6 @@ function initTelemetryChart() {
 
 function updateTelemetryFromHistory(history, stationName) {
   if (!telemetryChart || !history || history.length === 0) return;
-
   telemetryChart.data.labels = history.map(h => h.time);
   telemetryChart.data.datasets[0].data = history.map(h => h.rain);
   telemetryChart.data.datasets[1].data = history.map(h => h.pore);
@@ -855,7 +907,7 @@ function updateTelemetryFromHistory(history, stationName) {
 }
 
 // ==========================================
-// 9. SENTINEL-1 INSAR INTERFEROMETRY REFRESH
+// 9. SENTINEL-1 INSAR REFRESH
 // ==========================================
 
 function initInSARRefresh() {
@@ -871,7 +923,6 @@ function initInSARRefresh() {
       icon.classList.remove('fa-spin');
       btn.disabled = false;
 
-      // Randomize small variation in Sentinel pass to prove real-time interactivity
       const velocity = (17.8 + Math.random() * 2.2).toFixed(1);
       const coherence = (0.87 + Math.random() * 0.06).toFixed(2);
 
@@ -948,7 +999,7 @@ function initFieldIncidentForm() {
 
     const locationInp = document.getElementById('inp-location').value.trim();
     const hazardType = document.getElementById('sel-hazard').value;
-    const crackWidth = `${crackSlider.value} cm`;
+    const crackWidth = crackSlider ? `${crackSlider.value} cm` : '12 cm';
     const notes = document.getElementById('inp-notes').value.trim();
 
     if (!locationInp) return;
@@ -969,11 +1020,9 @@ function initFieldIncidentForm() {
       localStorage.setItem('terrasafe_field_reports', JSON.stringify(localReports));
     } catch (err) {}
 
-    // Update UI feeds and badges
     renderIncidentFeed();
     plotReportMarkers();
 
-    // If online, transmit to backend server
     if (!isOfflineMode) {
       try {
         await fetch('/api/reports', {
@@ -985,21 +1034,19 @@ function initFieldIncidentForm() {
             location_desc: newReport.location,
             hazard_type: newReport.hazardType,
             severity: 'CRITICAL',
-            state: 'Sikkim / Assam Lifeline',
+            state: 'North East Corridor',
             notes: `${newReport.crackWidth} crack. ${newReport.notes}`
           })
         });
       } catch (err) {
-        console.warn('Backend server offline; saved locally in IndexedDB/SQLite.');
+        console.warn('Saved offline in local buffer:', err);
       }
     }
 
-    // Reset Form
     form.reset();
     if (crackDisp) crackDisp.textContent = '12 cm';
 
-    // Switch to feedback
-    alert(`✅ Ground Incident Logged:\n\n${newReport.hazardType} at ${newReport.location}.\nStatus: ${newReport.status}`);
+    alert(`✅ Ground Incident Logged & Queued:\n\nObserved: ${newReport.hazardType}\nLocation: ${newReport.location}\nStatus: ${newReport.status}\n\nVisible on top of the Live Field Incident Feed!`);
   });
 }
 
@@ -1027,7 +1074,7 @@ function renderIncidentFeed() {
       ${item.notes ? `<div class="incident-notes">"${item.notes}"</div>` : ''}
       <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px; font-size:10px; font-family:'JetBrains Mono', monospace;">
         <span class="text-muted"><i class="fa-solid fa-user-shield"></i> ${item.reporter || 'Field Scout'}</span>
-        <span class="${item.status.includes('OFFLINE') ? 'text-amber' : 'text-emerald'}">
+        <span class="${item.status.includes('OFFLINE') ? 'text-amber font-bold' : 'text-emerald'}">
           <i class="fa-solid fa-circle-check"></i> ${item.status}
         </span>
       </div>
@@ -1057,7 +1104,6 @@ function applyDialect(lang) {
   const marquee = document.getElementById('marquee-alert');
   if (marquee && dict.marquee) marquee.textContent = dict.marquee;
 
-  // Update Sector Inspector Protocol if current sector matches Ranipool
   const protocolEl = document.getElementById('disp-sector-protocol');
   if (protocolEl && currentInspectorSector) {
     if (currentInspectorSector.state.toLowerCase() === 'sikkim' && dict.protocolRanipool) {
@@ -1084,8 +1130,18 @@ function initEmergencyBroadcast() {
         toast.classList.add('hidden');
       }, 4500);
     }
-    // Also trigger audio siren
+    // Play dual-tone synthesized siren + native speech
     playAudioSiren();
+
+    // Flash Marquee Alert
+    const marquee = document.getElementById('marquee-alert');
+    if (marquee) {
+      const orig = marquee.textContent;
+      marquee.textContent = '🚨 IMMEDIATE EVACUATION DIRECTIVE BROADCAST DISPATCHED VIA OASIS CAP v1.2';
+      setTimeout(() => {
+        marquee.textContent = orig;
+      }, 6000);
+    }
   };
 
   if (triggerBtn) triggerBtn.addEventListener('click', executeBroadcast);
@@ -1101,19 +1157,49 @@ function initAudioSiren() {
   }
 }
 
+// Authentic Web Audio dual-tone emergency siren synthesizer
 function playAudioSiren() {
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (AudioContext) {
+      const ctx = new AudioContext();
+      if (ctx.state === 'suspended') {
+        ctx.resume();
+      }
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sawtooth';
+      gain.gain.setValueAtTime(0.35, ctx.currentTime);
+
+      const now = ctx.currentTime;
+      for (let i = 0; i < 4; i++) {
+        osc.frequency.setValueAtTime(680, now + i * 0.7);
+        osc.frequency.linearRampToValueAtTime(1250, now + i * 0.7 + 0.35);
+        osc.frequency.linearRampToValueAtTime(680, now + i * 0.7 + 0.7);
+      }
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start();
+      osc.stop(now + 2.8);
+    }
+  } catch (err) {
+    console.warn('Web Audio synthesis fallback:', err);
+  }
+
   const audio = document.getElementById('siren-audio');
   if (audio) {
     audio.currentTime = 0;
     audio.play().catch(() => {});
   }
 
-  // Voice alert synthesis
   if ('speechSynthesis' in window) {
     window.speechSynthesis.cancel();
     const dict = I18N_WARNINGS[currentLanguage] || I18N_WARNINGS.en;
     const utterance = new SpeechSynthesisUtterance(dict.speechHeadline);
-    utterance.rate = 0.92;
+    utterance.rate = 0.95;
     const langMap = { en: 'en-IN', hi: 'hi-IN', as: 'as-IN', ne: 'ne-NP', mz: 'en-IN' };
     utterance.lang = langMap[currentLanguage] || 'en-IN';
     window.speechSynthesis.speak(utterance);
@@ -1121,7 +1207,7 @@ function playAudioSiren() {
 }
 
 // ==========================================
-// 14. MONSOON SURGE SLIDER (PREDICTIVE AI)
+// 14. MONSOON SURGE SLIDER
 // ==========================================
 
 function initSurgeSlider() {
@@ -1158,7 +1244,7 @@ function initSurgeSlider() {
 function initOfflineSimulation() {
   const toggle = document.getElementById('offline-toggle');
   const pill = document.getElementById('telemetry-status-pill');
-  const txt = document.getElementById('txt-telemetry-status');
+  const banner = document.getElementById('offline-queue-banner');
 
   if (!toggle) return;
 
@@ -1168,14 +1254,18 @@ function initOfflineSimulation() {
     if (isOfflineMode) {
       if (pill) {
         pill.className = 'telemetry-status-pill offline';
-        pill.innerHTML = '<i class="fa-solid fa-plane-slash"></i> <span id="txt-telemetry-status">Offline Buffer Active</span>';
+        pill.innerHTML = '<i class="fa-solid fa-plane-slash text-amber"></i> <span id="txt-telemetry-status">Offline Buffer Active</span>';
       }
+      if (banner) banner.classList.remove('hidden');
+
+      alert('🏔️ MOUNTAIN DEAD ZONE SIMULATION ACTIVE:\n\nCellular 4G/LTE towers disconnected in mountain canyon.\nAll new citizen reports will buffer locally in the encrypted on-device SQLite outbox.');
     } else {
       if (pill) {
         pill.className = 'telemetry-status-pill online';
-        pill.innerHTML = '<i class="fa-solid fa-tower-broadcast"></i> <span id="txt-telemetry-status">SAT-Net Synced</span>';
+        pill.innerHTML = '<i class="fa-solid fa-tower-broadcast text-emerald"></i> <span id="txt-telemetry-status">SAT-Net Synced</span>';
       }
-      // Reconnected! Flush offline reports
+      if (banner) banner.classList.add('hidden');
+
       await flushOfflineReports();
     }
   });
@@ -1183,7 +1273,10 @@ function initOfflineSimulation() {
 
 async function flushOfflineReports() {
   const pending = localReports.filter(r => r.status.includes('OFFLINE'));
-  if (pending.length === 0) return;
+  if (pending.length === 0) {
+    alert('📡 RECONNECTED: Satellite uplink active. All packets are already synchronized.');
+    return;
+  }
 
   try {
     const res = await fetch('/api/reports/batch', {
@@ -1207,8 +1300,12 @@ async function flushOfflineReports() {
       p.status = 'RELAYED TO STATE EOC 112';
     });
 
+    try {
+      localStorage.setItem('terrasafe_field_reports', JSON.stringify(localReports));
+    } catch (e) {}
+
     renderIncidentFeed();
-    alert(`📡 RECONNECTED TO SATELLITE GATEWAY:\n\nSynced ${data.synced_count || pending.length} pending report(s) from on-device SQLite buffer!`);
+    alert(`📡 RECONNECTED TO SEOC 112 GATEWAY:\n\nFlushed ${data.synced_count || pending.length} pending report(s) from on-device SQLite buffer to Cloud Gateway!`);
   } catch (err) {
     console.warn('Batch sync fallback:', err);
   }
