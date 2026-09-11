@@ -318,7 +318,6 @@ document.addEventListener('DOMContentLoaded', () => {
   safeInit(initHotspotDropdown, 'Hotspot Dropdown');
   safeInit(initDialectSwitcher, 'Dialect Switcher');
   safeInit(initOfflineSimulation, 'Offline Simulation');
-  safeInit(initSurgeSlider, 'Surge Slider');
   safeInit(initLiveWeatherToggle, 'Live Weather Toggle');
   safeInit(initSmsGatewayModal, 'SMS Gateway Modal');
   safeInit(initEmergencyBroadcast, 'Emergency Broadcast');
@@ -519,7 +518,7 @@ function renderBypassPolylines() {
 
 async function loadBackendData() {
   try {
-    const rainVal = document.getElementById('slider-rain') ? document.getElementById('slider-rain').value : 75;
+    const rainVal = 75;
 
     const [stRes, zRes, mlRes] = await Promise.all([
       fetch('/api/stations').then(r => r.json()).catch(() => null),
@@ -1486,36 +1485,6 @@ function playAudioSiren() {
   }
 }
 
-// ==========================================
-// 14. MONSOON SURGE SLIDER
-// ==========================================
-
-function initSurgeSlider() {
-  const slider = document.getElementById('slider-rain');
-  const disp = document.getElementById('slider-rain-val');
-  const peakDisp = document.getElementById('disp-peak-rain');
-
-  if (!slider || !disp) return;
-
-  slider.addEventListener('input', () => {
-    disp.textContent = `${slider.value} mm/h`;
-  });
-
-  slider.addEventListener('change', async () => {
-    const val = parseFloat(slider.value);
-    if (peakDisp) peakDisp.textContent = `${(val * 3.2).toFixed(0)} mm`;
-
-    try {
-      const res = await fetch(`/api/ml/heatmap?rainfall=${val}`);
-      const data = await res.json();
-      if (data && data.status === 'success') {
-        renderMlHeatmap(data);
-      }
-    } catch (err) {
-      console.warn('Monsoon surge simulation error:', err);
-    }
-  });
-}
 
 // ==========================================
 // 15. OFFLINE MOUNTAIN DEAD ZONE SIMULATION

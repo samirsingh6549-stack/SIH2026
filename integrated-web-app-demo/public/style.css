@@ -461,35 +461,6 @@ input:checked + .toggle-slider:before {
   gap: 10px;
 }
 
-/* RAIN SURGE SLIDER TOOL */
-.surge-slider-box {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--bg-subtle);
-  padding: 6px 12px;
-  border-radius: 8px;
-  border: 1px solid var(--border-card);
-  font-size: 11px;
-}
-
-.surge-label {
-  color: var(--text-muted);
-  font-weight: 600;
-}
-
-.surge-slider-box input[type="range"] {
-  width: 90px;
-  accent-color: var(--brand-teal);
-  cursor: pointer;
-}
-
-.surge-val {
-  color: var(--brand-teal);
-  font-weight: 700;
-  min-width: 55px;
-}
-
 /* BUTTONS */
 .btn-primary-gradient {
   background: var(--danger-red);
