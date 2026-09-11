@@ -410,12 +410,34 @@ function initGISMap() {
     maxZoom: 18
   }).setView([26.0, 92.5], 7);
 
-  // CartoDB Dark Matter base layer
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  // Base Layer 1: CartoDB Dark Matter (Tactical Defense Cockpit)
+  const cartoDarkLayer = L.tileLayer('https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', {
     attribution: '&copy; CARTO &copy; OpenStreetMap | SIH 2026 TerraSafe AI NER',
-    subdomains: 'abcd',
     maxZoom: 19
-  }).addTo(map);
+  });
+
+  // Base Layer 2: ESRI World Imagery (100% Free Satellite Relief - No API Key Needed)
+  const esriSatelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'Tiles &copy; Esri, Earthstar Geographics | SIH 2026 TerraSafe AI NER',
+    maxZoom: 18
+  });
+
+  // Base Layer 3: OpenStreetMap Standard (100% Free Public Topo - No API Key Needed)
+  const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors | SIH 2026 TerraSafe AI NER',
+    maxZoom: 19
+  });
+
+  // Add default base layer
+  cartoDarkLayer.addTo(map);
+
+  // Add basemap layer control in bottom-left so user can toggle between Satellite, Dark, and OSM
+  const baseMaps = {
+    "<span style='color:#fff;font-size:11px;'>Tactical Dark</span>": cartoDarkLayer,
+    "<span style='color:#38bdf8;font-size:11px;'>Satellite Relief (ESRI)</span>": esriSatelliteLayer,
+    "<span style='color:#10b981;font-size:11px;'>OpenStreetMap (No Key)</span>": osmLayer
+  };
+  L.control.layers(baseMaps, null, { position: 'bottomleft', collapsed: true }).addTo(map);
 
   // Layer Groups
   zoneLayerGroup = L.layerGroup().addTo(map);

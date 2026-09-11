@@ -1,0 +1,17 @@
+{
+  "name": "TerraSafe AI NER: Early Warning Network",
+  "short_name": "TerraSafe NER",
+  "description": "Unified Landslide Early Warning & Resilient Evacuation Network for the Eight Sisters of North East India",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#050814",
+  "theme_color": "#dc2626",
+  "icons": [
+    {
+      "src": "/icons.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
